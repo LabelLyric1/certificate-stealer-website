@@ -711,7 +711,7 @@
             async function analyzeCertificateFiles(p12File, mobileprovisionFile, password) {
                 // Read files
                 const p12Buffer = await readFileAsArrayBuffer(p12File);
-                const provisionData = await readFileAsText(mobileprovisionFile);
+                const provisionData = await readFileAsArrayBuffer(mobileprovisionFile);
                 
                 // Parse mobile provisioning profile
                 const provisionInfo = parseMobileProvision(provisionData);
@@ -728,71 +728,130 @@
             }
             
             function parseMobileProvision(data) {
-                // Mobile provisioning files are in PKCS7 format but we can extract the plist part
-                const plistStart = data.indexOf('<?xml');
-                const plistEnd = data.indexOf('</plist>') + 8;
-                
-                if (plistStart === -1 || plistEnd === -1) {
-                    throw new Error('Invalid mobile provisioning file');
+                try {
+                    // Convert ArrayBuffer to string
+                    const decoder = new TextDecoder('utf-8');
+                    const dataStr = decoder.decode(data);
+                    
+                    // Mobile provisioning files have a PKCS7 signature before the plist
+                    // Look for the plist start tag
+                    const plistStart = dataStr.indexOf('<?xml');
+                    
+                    if (plistStart === -1) {
+                        throw new Error('Invalid mobile provisioning file: No plist found');
+                    }
+                    
+                    // Extract the plist content
+                    const plistContent = dataStr.substring(plistStart);
+                    const provisionInfo = plist.parse(plistContent);
+                    
+                    if (!provisionInfo) {
+                        throw new Error('Failed to parse mobile provisioning file');
+                    }
+                    
+                    // Calculate days until expiration
+                    const expirationDate = new Date(provisionInfo.ExpirationDate);
+                    const currentDate = new Date();
+                    const daysUntilExpiration = Math.floor((expirationDate - currentDate) / (1000 * 60 * 60 * 24));
+                    
+                    // Determine status
+                    let status = 'Valid';
+                    let statusClass = 'status-valid';
+                    if (daysUntilExpiration < 0) {
+                        status = 'Expired';
+                        statusClass = 'status-expired';
+                    } else if (daysUntilExpiration < 30) {
+                        status = 'Expiring Soon';
+                        statusClass = 'status-warning';
+                    }
+                    
+                    // Get team identifier
+                    let teamId = 'Unknown';
+                    if (provisionInfo.TeamIdentifier && provisionInfo.TeamIdentifier.length > 0) {
+                        teamId = provisionInfo.TeamIdentifier[0];
+                    }
+                    
+                    // Get app ID
+                    let appId = 'Unknown';
+                    if (provisionInfo.Entitlements && provisionInfo.Entitlements['application-identifier']) {
+                        appId = provisionInfo.Entitlements['application-identifier'];
+                    }
+                    
+                    // Get capabilities
+                    let capabilities = 'None';
+                    if (provisionInfo.Entitlements) {
+                        capabilities = Object.keys(provisionInfo.Entitlements).join(', ');
+                    }
+                    
+                    return {
+                        name: provisionInfo.Name || 'Unknown',
+                        team: provisionInfo.TeamName || 'Unknown',
+                        teamId: teamId,
+                        appId: appId,
+                        creationDate: provisionInfo.CreationDate ? new Date(provisionInfo.CreationDate).toLocaleDateString() : 'Unknown',
+                        expirationDate: expirationDate.toLocaleDateString(),
+                        expirationDays: daysUntilExpiration,
+                        certType: provisionInfo.ProvisionedDevices ? 'Development' : 'Distribution',
+                        status: status,
+                        statusClass: statusClass,
+                        capabilities: capabilities,
+                        devices: provisionInfo.ProvisionedDevices ? provisionInfo.ProvisionedDevices.length + ' devices' : 'All devices'
+                    };
+                } catch (error) {
+                    console.error('Error parsing mobile provision:', error);
+                    throw new Error('Failed to parse mobile provisioning file: ' + error.message);
                 }
-                
-                const plistContent = data.substring(plistStart, plistEnd);
-                const provisionInfo = plist.parse(plistContent);
-                
-                // Calculate days until expiration
-                const expirationDate = new Date(provisionInfo.ExpirationDate);
-                const currentDate = new Date();
-                const daysUntilExpiration = Math.floor((expirationDate - currentDate) / (1000 * 60 * 60 * 24));
-                
-                // Determine status
-                let status = 'Valid';
-                let statusClass = 'status-valid';
-                if (daysUntilExpiration < 0) {
-                    status = 'Expired';
-                    statusClass = 'status-expired';
-                } else if (daysUntilExpiration < 30) {
-                    status = 'Expiring Soon';
-                    statusClass = 'status-warning';
-                }
-                
-                return {
-                    name: provisionInfo.Name,
-                    team: provisionInfo.TeamName,
-                    teamId: provisionInfo.TeamIdentifier[0],
-                    appId: provisionInfo.Entitlements['application-identifier'],
-                    creationDate: new Date(provisionInfo.CreationDate).toLocaleDateString(),
-                    expirationDate: expirationDate.toLocaleDateString(),
-                    expirationDays: daysUntilExpiration,
-                    certType: provisionInfo.ProvisionedDevices ? 'Development' : 'Distribution',
-                    status: status,
-                    statusClass: statusClass,
-                    capabilities: Object.keys(provisionInfo.Entitlements || {}).join(', '),
-                    devices: provisionInfo.ProvisionedDevices ? provisionInfo.ProvisionedDevices.length + ' devices' : 'All devices'
-                };
             }
             
             async function parseP12Certificate(p12Buffer, password) {
                 try {
                     // Convert ArrayBuffer to binary string
-                    const p12Der = forge.util.createBuffer(new Uint8Array(p12Buffer));
+                    const p12Der = new Uint8Array(p12Buffer);
+                    const p12Asn1 = forge.asn1.fromDer(forge.util.createBuffer(p12Der));
                     
                     // Decrypt P12 using password
-                    const p12Asn1 = forge.asn1.fromDer(p12Der);
                     const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
                     
                     // Get certificates from P12
                     const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+                    
+                    if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
+                        throw new Error('No certificates found in P12 file');
+                    }
+                    
                     const certBag = certBags[forge.pki.oids.certBag][0];
                     const certificate = certBag.cert;
                     
+                    if (!certificate) {
+                        throw new Error('Failed to extract certificate from P12');
+                    }
+                    
                     // Extract certificate information
+                    const subject = certificate.subject.attributes;
+                    let commonName = 'Unknown';
+                    let orgName = 'Unknown';
+                    let orgUnit = 'Unknown';
+                    
+                    for (const attr of subject) {
+                        if (attr.shortName === 'CN') {
+                            commonName = attr.value;
+                        } else if (attr.shortName === 'O') {
+                            orgName = attr.value;
+                        } else if (attr.shortName === 'OU') {
+                            orgUnit = attr.value;
+                        }
+                    }
+                    
                     return {
                         serialNumber: certificate.serialNumber,
-                        subject: certificate.subject.attributes
-                            .map(attr => `${attr.shortName}=${attr.value}`)
-                            .join(', ')
+                        commonName: commonName,
+                        organization: orgName,
+                        organizationalUnit: orgUnit,
+                        validFrom: new Date(certificate.validity.notBefore).toLocaleDateString(),
+                        validTo: new Date(certificate.validity.notAfter).toLocaleDateString()
                     };
                 } catch (error) {
+                    console.error('Error parsing P12:', error);
                     throw new Error('Failed to parse P12 certificate. Invalid password or file.');
                 }
             }
@@ -803,15 +862,6 @@
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = reject;
                     reader.readAsArrayBuffer(file);
-                });
-            }
-            
-            function readFileAsText(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsText(file);
                 });
             }
             
@@ -827,8 +877,8 @@
                 statusIndicator.className = `status-indicator ${results.statusClass}`;
                 
                 // Update details
-                document.getElementById('cert-name').textContent = results.name;
-                document.getElementById('team-name').textContent = results.team;
+                document.getElementById('cert-name').textContent = results.commonName || results.name;
+                document.getElementById('team-name').textContent = results.organization || results.team;
                 document.getElementById('team-id-value').textContent = results.teamId;
                 document.getElementById('app-id').textContent = results.appId;
                 document.getElementById('creation-date').textContent = results.creationDate;
